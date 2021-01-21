@@ -97,6 +97,11 @@ __pypackages__/
 # Celery stuff
 celerybeat-schedule
 celerybeat.pid
+# pyenv
+.python-version
+
+# celery beat schedule file
+celerybeat-schedule
 
 # SageMath parsed files
 *.sage.py
@@ -127,3 +132,12 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Skbuild
+_skbuild/
+
+# FFTW
+*.wisdom
+
+# Clang Format
+.clang-format
