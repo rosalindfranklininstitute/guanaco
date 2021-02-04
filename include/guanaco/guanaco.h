@@ -37,15 +37,18 @@ struct Config {
   size_type num_angles;
   size_type grid_height;
   size_type grid_width;
+  size_type num_defocus;
   float pixel_size;
   float centre;
   std::vector<float> angles;
+  std::vector<float> defocus;
 
   Config()
       : device(e_host),
         gpu_index(0),
         num_pixels(0),
         num_angles(0),
+        num_defocus(0),
         grid_height(0),
         grid_width(0),
         pixel_size(1),
@@ -67,7 +70,8 @@ struct Config {
     return (device == e_host || device == e_device) && grid_height > 0
            && grid_width > 0 && num_pixels > 0 && pixel_size > 0
            && num_angles > 0
-           && angles.size() == num_angles;
+           && angles.size() == num_angles
+           && defocus.size() == num_defocus;
   }
 };
 

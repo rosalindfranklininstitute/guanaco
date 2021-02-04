@@ -34,6 +34,7 @@ def reconstruct(
     angles,
     reconstruction=None,
     centre=None,
+    defocus=None,
     pixel_size=1,
     sinogram_order=False,
     device="cpu",
@@ -84,6 +85,13 @@ def reconstruct(
             centre = numpy.ones(shape[0], dtype="float32") * centre
         return centre.astype(dtype="float32", copy=False)
 
+    def get_defocus(shape, defocus):
+        if len(shape) == 4:
+            assert len(defocus) == shape[1]
+        else:
+            defocus = None
+        return defocus
+
     # Initialize sinogram
     sinogram = initialise_sinogram(tomogram, sinogram_order)
 
@@ -93,12 +101,16 @@ def reconstruct(
     # Generate args for the algorithm.
     centre = get_centre(sinogram.shape, centre)
 
+    # Get the defocus
+    defocus = get_defocus(sinogram.shape, defocus)
+
     # Perform the reconstruction in multiple threads
     guanaco.detail.mp.reconstruction_dispatcher(
         sinogram,
         reconstruction,
         centre,
         angles,
+        defocus=defocus,
         pixel_size=pixel_size,
         device=device,
         ncore=ncore,
@@ -163,6 +175,9 @@ def reconstruct_file(
         # Get the projection metadata
         angles, voxel_size = read_projection_metadata(infile)
 
+        # Get the pixel size
+        pixel_size = 1.0  # FIXME voxel_size["x"]
+
         # Get the projection data
         projections = infile.data
 
@@ -181,9 +196,9 @@ def reconstruct_file(
 
         sinogram_order = False
 
+        defocus_array = None
         intermediate_filename = "corrected.dat"
         if defocus is not None:
-            pixel_size = voxel_size["x"]
             if num_defocus == None:
                 num_defocus = 1
                 defocus_array = numpy.array([defocus], dtype="float32")
@@ -245,6 +260,8 @@ def reconstruct_file(
                 angles,
                 reconstruction,
                 centre=None,
+                defocus=defocus_array,
+                pixel_size=pixel_size,
                 sinogram_order=sinogram_order,
                 device=device,
                 ncore=ncore,
