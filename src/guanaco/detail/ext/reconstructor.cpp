@@ -1,11 +1,14 @@
-
+#include <iostream>
 #include <guanaco/guanaco.h>
 
 namespace guanaco {
 
-Filter<e_host>::Filter(size_type num_pixels, size_type num_angles)
+Filter<e_host>::Filter(size_type num_pixels,
+                       size_type num_angles,
+                       size_type num_defocus)
     : num_pixels_(num_pixels),
       num_angles_(num_angles),
+      num_defocus_(num_defocus),
       filter_(create_filter(num_pixels_ + 1)),
       fft_(num_pixels_ * 2, 1) {
   GUANACO_ASSERT(num_pixels_ > 0);
@@ -40,7 +43,7 @@ void Filter<e_host>::operator()(float *data) const {
   auto row = complex_vector_type(num_pixels_ * 2);
 
   // Loop through all the projection images
-  for (auto i = 0; i < num_angles_; ++i) {
+  for (auto i = 0; i < num_defocus_ * num_angles_; ++i) {
     // Get a row of data
     float *data_row = data + i * num_pixels_;
 
@@ -70,12 +73,14 @@ void Filter<e_host>::operator()(float *data) const {
 }
 
 Reconstructor_t<e_host>::Reconstructor_t(const Config &config)
-    : config_(config), filter_(config_.num_pixels, config_.num_angles) {
+    : config_(config),
+      filter_(config_.num_pixels, config_.num_angles, config_.num_defocus) {
   GUANACO_ASSERT(config_.device == e_host);
   GUANACO_ASSERT(config_.is_valid());
 }
 
-void Reconstructor_t<e_host>::operator()(const float *sinogram, float *reconstruction) const {
+void Reconstructor_t<e_host>::operator()(const float *sinogram,
+                                         float *reconstruction) const {
   GUANACO_ASSERT(sinogram != nullptr);
   GUANACO_ASSERT(reconstruction != nullptr);
 
@@ -104,7 +109,8 @@ void Reconstructor_t<e_host>::operator()(const float *sinogram, float *reconstru
   }
 }
 
-void Reconstructor_t<e_host>::project(const float *sinogram, float *reconstruction) const {
+void Reconstructor_t<e_host>::project(const float *sinogram,
+                                      float *reconstruction) const {
   // precomputations
   const auto pixelLengthX = config_.pixel_size;
   const auto pixelLengthY = config_.pixel_size;

@@ -140,7 +140,7 @@ public:
   using vector_type = std::vector<float>;
   using complex_vector_type = std::vector<std::complex<float>>;
 
-  Filter(size_type num_pixels, size_type num_angles);
+  Filter(size_type num_pixels, size_type num_angles, size_type num_defocus);
   void operator()(float *data) const;
 
   const vector_type &filter() const;
@@ -150,6 +150,7 @@ protected:
 
   size_type num_pixels_;
   size_type num_angles_;
+  size_type num_defocus_;
   vector_type filter_;
   FFT<e_host> fft_;
 };

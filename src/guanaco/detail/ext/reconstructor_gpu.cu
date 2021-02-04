@@ -98,12 +98,14 @@ protected:
   FFT<e_device> fft_;
 };
 
-Filter<e_device>::Filter(size_type num_pixels, size_type num_angles, size_type num_defocus)
+Filter<e_device>::Filter(size_type num_pixels,
+                         size_type num_angles,
+                         size_type num_defocus)
     : num_pixels_(num_pixels),
       num_angles_(num_angles),
       num_defocus_(num_defocus),
       filter_(create_filter(num_pixels_ + 1)),
-      fft_(num_pixels_ * 2, num_angles_*num_defocus_) {
+      fft_(num_pixels_ * 2, num_angles_ * num_defocus_) {
   GUANACO_ASSERT(num_pixels_ > 0);
   GUANACO_ASSERT(num_angles_ > 0);
   GUANACO_ASSERT(num_defocus_ > 0);
@@ -136,11 +138,9 @@ void Filter<e_device>::operator()(float *data) const {
   using device_vector_f = thrust::device_vector<float>;
   using device_vector_c = thrust::device_vector<thrust::complex<float>>;
 
-  // Copy the filter to the device for each projection
-  auto filter_d = device_vector_c(num_defocus_ * num_angles_ * filter_.size(), 0);
-  for (auto i = 0; i < num_defocus_ * num_angles_; ++i) {
-    thrust::copy(filter_.begin(), filter_.end(), filter_d.begin() + i * filter_.size());
-  }
+  // Copy the filter to the device
+  auto filter_d = device_vector_c(filter_.size(), 0);
+  thrust::copy(filter_.begin(), filter_.end(), filter_d.begin());
 
   // Copy the rows of the sinogram to a zero padded array. When taking the FT
   // of the data, we are going from real to complex so the output array only
@@ -157,12 +157,14 @@ void Filter<e_device>::operator()(float *data) const {
   // Take the FT of the rows of the data
   fft_.forward(rows_f.data().get(), rows_c.data().get());
 
-  // Apply the filter
-  thrust::transform(filter_d.begin(),
-                    filter_d.end(),
-                    rows_c.begin(),
-                    rows_c.begin(),
-                    thrust::multiplies<thrust::complex<float>>());
+  // Apply the filter to each projection
+  for (auto i = 0; i < num_defocus_ * num_angles_; ++i) {
+    thrust::transform(filter_d.begin(),
+                      filter_d.end(),
+                      rows_c.begin() + i * filter_.size(),
+                      rows_c.begin() + i * filter_.size(),
+                      thrust::multiplies<thrust::complex<float>>());
+  }
 
   // Take the inverse FT of the rows of the data
   fft_.inverse(rows_c.data().get(), rows_f.data().get());
@@ -189,7 +191,7 @@ namespace detail {
 
     const size_t MAX_ANGLES = 2048;
 
-    typedef texture<float, 2, cudaReadModeElementType> texture_type;
+    typedef texture<float, 3, cudaReadModeElementType> texture_type;
 
     static texture_type sinogram;
 
@@ -213,8 +215,14 @@ namespace detail {
     size_t grid_height;
     float scale;
 
-    BPFunction(size_t num_angles_, size_t grid_width_, size_t grid_height_, float scale_)
-        : num_angles(num_angles_), grid_width(grid_width_), grid_height(grid_height_), scale(scale_) {
+    BPFunction(size_t num_angles_,
+               size_t grid_width_,
+               size_t grid_height_,
+               float scale_)
+        : num_angles(num_angles_),
+          grid_width(grid_width_),
+          grid_height(grid_height_),
+          scale(scale_) {
       GUANACO_ASSERT(num_angles_ <= max_angles);
     }
 
@@ -230,7 +238,6 @@ namespace detail {
       // Loop through all the angles and compute the value of the voxel
       float value = 0.0f;
       for (size_t angle = 0; angle < num_angles; ++angle) {
-
         // Get parameters
         const float a = g::angle_param_a[angle];
         const float b = g::angle_param_b[angle];
@@ -241,7 +248,7 @@ namespace detail {
         const float pixel = a * x + b * y + c;
 
         // Sum the sinogram value for the pixel and angle
-        value += tex2D(g::sinogram, pixel, angle + 0.5) * scale;
+        value += tex3D(g::sinogram, pixel, angle + 0.5, 0.5) * scale;
       }
 
       // Add the contribution to the voxel
@@ -254,35 +261,29 @@ namespace detail {
 
     static const size_type max_angles = BPFunction::max_angles;
 
-    float *pitched_sinogram_;
-    size_type pitch_;
+    cudaArray *sinogram_array_;
     size_type num_angles_;
+    size_type num_defocus_;
 
     BP(const float *angles,
        size_type num_angles,
+       size_type num_defocus,
        float centre,
        const float *sinogram,
        size_type num_pixels)
-        : pitched_sinogram_(nullptr), num_angles_(num_angles) {
+        : sinogram_array_(nullptr), num_angles_(num_angles), num_defocus_(num_defocus) {
       // Check number of angles
       GUANACO_ASSERT(num_angles <= max_angles);
-
-      // Allocate a pitched array needed to bind texture
-      auto error = cudaMallocPitch(
-        &pitched_sinogram_, &pitch_, sizeof(float) * num_pixels, num_angles);
-      GUANACO_ASSERT_CUDA(error == cudaSuccess);
-      GUANACO_ASSERT((pitch_ % sizeof(float)) == 0);
-      pitch_ /= sizeof(float);
 
       // Copy the angle data to device symbols
       copy_angles(angles, num_angles_, centre);
 
       // Copy the sinogram to the texture memory
-      copy_sinogram(sinogram, num_pixels, num_angles);
+      copy_sinogram(sinogram, num_pixels, num_angles, num_defocus);
     }
 
     ~BP() {
-      cudaFree(pitched_sinogram_);
+      cudaFreeArray(sinogram_array_);
     }
 
     void copy_angles(const float *angles, size_type num_angles, float centre) const {
@@ -310,8 +311,8 @@ namespace detail {
         auto dir_y = std::sin(angle);
         auto det_x0 = -centre * dir_x;
         auto det_y0 = -centre * dir_y;
-        auto ray_length = 1.0;//std::sqrt(dir_x * dir_x + (-dir_y) * (-dir_y));
-        auto d = 1.0;//dir_x * dir_x - dir_y * (-dir_y);
+        auto ray_length = 1.0;  // std::sqrt(dir_x * dir_x + (-dir_y) * (-dir_y));
+        auto d = 1.0;           // dir_x * dir_x - dir_y * (-dir_y);
 
         // Fill the arrays
         angle_param_a[i] = dir_x / d;
@@ -327,29 +328,34 @@ namespace detail {
       copy(&g::angle_scale, angle_scale.data(), num_angles);
     }
 
-    void copy_sinogram(const float *sinogram, size_type num_pixels, size_type num_angles) {
+    void copy_sinogram(const float *sinogram,
+                       size_type num_pixels,
+                       size_type num_angles,
+                       size_type num_defocus) {
+      // Allocate a cuda array needed to bind 3D texture
       auto channel_desc = cudaCreateChannelDesc<float>();
+      auto extent = make_cudaExtent(num_pixels, num_angles, num_defocus);
+      auto error = cudaMalloc3DArray(&sinogram_array_, &channel_desc, extent);
+      GUANACO_ASSERT_CUDA(error == cudaSuccess);
 
+      // Copy the data
+      cudaMemcpy3DParms copy_params{0};
+      copy_params.srcPtr = make_cudaPitchedPtr(
+        (void *)sinogram, extent.width * sizeof(float), extent.width, extent.height);
+      copy_params.dstArray = sinogram_array_;
+      copy_params.extent = extent;
+      copy_params.kind = cudaMemcpyDeviceToDevice;
+      cudaMemcpy3D(&copy_params);
+
+      // Set texture parameters
       g::sinogram.addressMode[0] = cudaAddressModeBorder;
       g::sinogram.addressMode[1] = cudaAddressModeBorder;
+      g::sinogram.addressMode[2] = cudaAddressModeBorder;
       g::sinogram.filterMode = cudaFilterModeLinear;
       g::sinogram.normalized = false;
 
-      // Copy the sinogram to a pitched array needed for texture binding
-      for (auto i = 0; i < num_angles; ++i) {
-        auto in = thrust::device_pointer_cast(sinogram + i * num_pixels);
-        auto out = thrust::device_pointer_cast(pitched_sinogram_ + i * pitch_);
-        thrust::copy(in, in + num_pixels, out);
-      }
-
-      auto error = cudaBindTexture2D(0,
-                                     g::sinogram,
-                                     pitched_sinogram_,
-                                     channel_desc,
-                                     num_pixels,
-                                     num_angles,
-                                     pitch_ * sizeof(float));
-
+      // Bind the texture to the array
+      error = cudaBindTextureToArray(g::sinogram, sinogram_array_, channel_desc);
       GUANACO_ASSERT_CUDA(error == cudaSuccess);
     }
 
@@ -374,10 +380,7 @@ Reconstructor_t<e_device>::Reconstructor_t(const Config &config) : config_(confi
 
 void Reconstructor_t<e_device>::operator()(const float *sinogram,
                                            float *reconstruction) const {
-  Filter<e_device> filter_(
-      config_.num_pixels, 
-      config_.num_angles,
-      config_.num_defocus);
+  Filter<e_device> filter_(config_.num_pixels, config_.num_angles, config_.num_defocus);
 
   // A function to set the gpu index
   auto set_gpu_index = [](int index) {
@@ -422,16 +425,19 @@ void Reconstructor_t<e_device>::project(const float *sinogram_d,
   scale *= config_.pixel_size;  // ONLY VALID FOR SQUARE
 
   // Loop through the number of angles and only do the max number of
-  // projections at a time
+  // projections at a time FIXME ORDER SHOULD BE DEFOCUS
   for (auto start_angle = 0; start_angle < config_.num_angles;
        start_angle += detail::BP::max_angles) {
-    auto end_angle =
-      std::min(start_angle + detail::BP::max_angles, config_.num_angles);
+    auto end_angle = std::min(start_angle + detail::BP::max_angles, config_.num_angles);
     auto num_angles = end_angle - start_angle;
     auto angles = config_.angles.data() + start_angle;
     auto sino = sinogram_d + start_angle * config_.num_pixels;
-    auto bp =
-      detail::BP(angles, num_angles, config_.centre, sino, config_.num_pixels);
+    auto bp = detail::BP(angles,
+                         num_angles,
+                         config_.num_defocus,
+                         config_.centre,
+                         sino,
+                         config_.num_pixels);
     bp.launch(reconstruction_d, config_.grid_width, config_.grid_height, scale);
   }
 }
