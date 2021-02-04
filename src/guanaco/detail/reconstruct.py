@@ -31,8 +31,8 @@ __all__ = ["reconstruct_file", "reconstruct"]
 
 def reconstruct(
     tomogram,
-    reconstruction,
     angles,
+    reconstruction=None,
     centre=None,
     sinogram_order=False,
     device="cpu",
@@ -40,13 +40,19 @@ def reconstruct(
     nchunk=None,
     gpu_list=None,
 ):
-    def initialise_sinogram(tomo, sinogram_order):
-        tomo = tomo.astype(dtype="float32", copy=False)
+    def initialise_sinogram(tomogram, sinogram_order):
+        tomogram = tomogram.astype(dtype="float32", copy=False)
         if not sinogram_order:
-            tomo = numpy.swapaxes(tomo, 0, 1)  # doesn't copy data
+            tomogram = numpy.swapaxes(tomogram, 0, 1)  # doesn't copy data
         # ensure contiguous
-        tomo = numpy.require(tomo, requirements="AC")
-        return tomo
+        tomogram = numpy.require(tomogram, requirements="AC")
+        return tomogram
+
+    def initialise_reconstruction(reconstruction, sinogram):
+        if reconstruction is None:
+            shape = (sinogram.shape[0], sinogram.shape[2], sinogram.shape[2])
+            reconstruction = numpy.zeros(shape, dtype="float32")
+        return reconstruction
 
     def get_centre(shape, centre):
         if centre is None:
@@ -61,6 +67,9 @@ def reconstruct(
     # Generate args for the algorithm.
     centre = get_centre(sinogram.shape, centre)
 
+    # Initialise reconstruction
+    reconstruction = initialise_reconstruction(reconstruction, sinogram)
+
     # Perform the reconstruction in multiple threads
     guanaco.detail.mp.reconstruction_dispatcher(
         sinogram,
@@ -72,6 +81,9 @@ def reconstruct(
         nchunk=nchunk,
         gpu_list=gpu_list,
     )
+
+    # Return reconstruction
+    return reconstruction
 
 
 def reconstruct_file(

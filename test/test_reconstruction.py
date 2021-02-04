@@ -193,7 +193,7 @@ def test_centred_rotation_axis_centred_object_with_ctf(test_data, device):
     # pylab.imshow(images[nangles//2, y0:y1, x0:x1])
     # pylab.show()
 
-    rec = guanaco.recon(images, angles, center=centre, device=device)
+    rec = guanaco.reconstruct(images, angles, centre=centre, device=device)
     rec = numpy.swapaxes(rec, 0, 1)
 
     # Get the ROI
@@ -247,7 +247,7 @@ def test_off_centre_rotation_axis_centred_object_with_ctf(test_data, device):
     # pylab.imshow(images[nangles//2, y0:y1, x0:x1])
     # pylab.show()
 
-    rec = guanaco.recon(images, angles, center=centre, device=device)
+    rec = guanaco.reconstruct(images, angles, centre=centre, device=device)
     rec = numpy.swapaxes(rec, 0, 1)
 
     # Get the ROI
@@ -301,7 +301,7 @@ def test_centred_rotation_axis_off_centre_object_with_ctf(test_data, device):
     # pylab.imshow(images[nangles//2, y0:y1, x0:x1])
     # pylab.show()
 
-    rec = guanaco.recon(images, angles, center=centre, device=device)
+    rec = guanaco.reconstruct(images, angles, centre=centre, device=device)
     rec = numpy.swapaxes(rec, 0, 1)
 
     # Get the ROI
@@ -355,7 +355,7 @@ def test_off_centre_rotation_axis_off_centre_object_with_ctf(test_data, device):
     # pylab.imshow(images[nangles//2, y0:y1, x0:x1])
     # pylab.show()
 
-    rec = guanaco.recon(images, angles, center=centre, device=device)
+    rec = guanaco.reconstruct(images, angles, centre=centre, device=device)
     rec = numpy.swapaxes(rec, 0, 1)
 
     # Get the ROI
