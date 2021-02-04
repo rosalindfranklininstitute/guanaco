@@ -20,75 +20,82 @@ def get_ncore_slices(axis_size, ncore=None, nchunk=None):
         sizes[:leftover] += 1
         offsets = numpy.zeros(ncore + 1, dtype=numpy.int)
         offsets[1:] = numpy.cumsum(sizes)
-        slcs = [
+        slices = [
             numpy.s_[offsets[i] : offsets[i + 1]] for i in range(offsets.shape[0] - 1)
         ]
     elif nchunk == 0:
         # nchunk == 0 is a special case, we will collapse the dimension
-        slcs = [numpy.s_[i] for i in range(axis_size)]
+        slices = [numpy.s_[i] for i in range(axis_size)]
     else:
         # calculate offsets based on chunk size
-        slcs = [
+        slices = [
             numpy.s_[offset : offset + nchunk] for offset in range(0, axis_size, nchunk)
         ]
-    return ncore, slcs
+    return ncore, slices
 
 
-def recon(
-    tomo, center, recon, theta, device="cpu", ncore=None, nchunk=None, gpu_list=None
+def reconstruction_dispatcher(
+    sinogram,
+    reconstruction,
+    centre,
+    angles,
+    device="cpu",
+    ncore=None,
+    nchunk=None,
+    gpu_list=None,
 ):
 
     # Unpack arguments
-    nslices = tomo.shape[0]
-    grid_shape = recon.shape[1:3]
+    nslices = sinogram.shape[0]
+
+    # Set the number of cores in the case of GPU
+    if device == "gpu" and ncore == None:
+        ncore = 1
 
     # Compute the number of cores
     if device == "gpu" and gpu_list is not None:
         ngpu = len(gpu_list)
-        ncore, slcs = get_ncore_slices(nslices, ngpu, nchunk)
-        assert ncore == len(slcs)
+        ncore, slices = get_ncore_slices(nslices, ngpu, nchunk)
+        assert ncore == len(slices)
         assert ncore == ngpu
     else:
-        ncore, slcs = get_ncore_slices(nslices, ncore, nchunk)
-        assert ncore == len(slcs)
+        ncore, slices = get_ncore_slices(nslices, ncore, nchunk)
+        assert ncore == len(slices)
         gpu_list = [None] * ncore
 
     # If only one core then run on this thread, otherwise spawn other threads
     if ncore == 1:
-        for slc in slcs:
-            recon_worker(
-                tomo[slc], center[slc], recon[slc], theta, grid_shape, device, None
+        for s in slices:
+            reconstruction_worker(
+                sinogram[s], reconstruction[s], centre[s], angles, device, None
             )
     else:
         with cf.ThreadPoolExecutor(ncore) as e:
-            for gpu, slc in zip(gpu_list, slcs):
+            for gpu, s in zip(gpu_list, slices):
                 e.submit(
-                    recon_worker,
-                    tomo[slc],
-                    center[slc],
-                    recon[slc],
-                    theta,
-                    grid_shape,
+                    reconstruction_worker,
+                    sinogram[s],
+                    reconstruction[s],
+                    centre[s],
+                    angles,
                     device,
                     gpu,
                 )
 
 
-def recon_worker(tomo, center, recon, theta, grid_shape, device, gpu_index):
+def reconstruction_worker(sinogram, reconstruction, centre, angles, device, gpu_index):
 
     if gpu_index is None:
         gpu_index = 0
 
-    nslices, nang, ndet = tomo.shape
+    nslices, nang, ndet = sinogram.shape
     for i in range(nslices):
 
         if device == "cpu":
-            device2 = "host"
-
-            sino = tomo[i]
-            shft = int(numpy.round(ndet / 2.0 - center[i]))
+            sino = sinogram[i]
+            shft = int(numpy.round(ndet / 2.0 - centre[i]))
             if not shft == 0:
-                sino = numpy.roll(tomo[i], shft)
+                sino = numpy.roll(sinogram[i], shft)
                 l = shft
                 r = ndet + shft
                 if l < 0:
@@ -97,14 +104,8 @@ def recon_worker(tomo, center, recon, theta, grid_shape, device, gpu_index):
                     r = ndet
                 sino[:, :l] = 0
                 sino[:, r:] = 0
-
-            guanaco.detail.recon(
-                sino, recon[i], theta.astype(numpy.float64), center[i], 1.0, "cpu"
-            )
         else:
-            device2 = "device"
-
-            sino = tomo[i]
-            guanaco.detail.recon(
-                sino, recon[i], theta.astype(numpy.float64), center[i], 1.0, "gpu"
-            )
+            sino = sinogram[i]
+        guanaco.detail.recon(
+            sino, reconstruction[i], angles, centre[i], 1.0, device, gpu_index=gpu_index
+        )

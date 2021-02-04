@@ -75,7 +75,7 @@ Reconstructor_t<e_host>::Reconstructor_t(const Config &config)
   GUANACO_ASSERT(config_.is_valid());
 }
 
-void Reconstructor_t<e_host>::operator()(float *sinogram, float *reconstruction) const {
+void Reconstructor_t<e_host>::operator()(const float *sinogram, float *reconstruction) const {
   GUANACO_ASSERT(sinogram != nullptr);
   GUANACO_ASSERT(reconstruction != nullptr);
 
@@ -104,7 +104,7 @@ void Reconstructor_t<e_host>::operator()(float *sinogram, float *reconstruction)
   }
 }
 
-void Reconstructor_t<e_host>::project(float *sinogram, float *reconstruction) const {
+void Reconstructor_t<e_host>::project(const float *sinogram, float *reconstruction) const {
   // precomputations
   const auto pixelLengthX = config_.pixel_size;
   const auto pixelLengthY = config_.pixel_size;

@@ -27,9 +27,9 @@ namespace py = pybind11;
 namespace guanaco {
 
   template <typename T>
-  void reconstruct(py::array_t<T> sinogram,
-                   py::array_t<T> reconstruction,
-                   py::array_t<T> angles,
+  void reconstruct(const py::array_t<T> &sinogram,
+                   py::array_t<T> &reconstruction,
+                   const py::array_t<T> angles,
                    float centre = 0,
                    float pixel_size = 1,
                    std::string device = "cpu",
@@ -62,7 +62,7 @@ namespace guanaco {
     auto rec = make_reconstructor(args);
 
     // Perform the reconstruction
-    rec(sinogram.mutable_data(), reconstruction.mutable_data());
+    rec(sinogram.data(), reconstruction.mutable_data());
   }
 
 }

@@ -258,7 +258,7 @@ namespace detail {
     BP(const float *angles,
        size_type num_angles,
        float centre,
-       float *sinogram,
+       const float *sinogram,
        size_type num_pixels)
         : pitched_sinogram_(nullptr), num_angles_(num_angles) {
       // Check number of angles
@@ -324,7 +324,7 @@ namespace detail {
       copy(&g::angle_scale, angle_scale.data(), num_angles);
     }
 
-    void copy_sinogram(float *data, size_type num_pixels, size_type num_angles) {
+    void copy_sinogram(const float *sinogram, size_type num_pixels, size_type num_angles) {
       auto channel_desc = cudaCreateChannelDesc<float>();
 
       g::sinogram.addressMode[0] = cudaAddressModeBorder;
@@ -332,9 +332,9 @@ namespace detail {
       g::sinogram.filterMode = cudaFilterModeLinear;
       g::sinogram.normalized = false;
 
-      // Copy the data to a pitched array needed for texture binding
+      // Copy the sinogram to a pitched array needed for texture binding
       for (auto i = 0; i < num_angles; ++i) {
-        auto in = thrust::device_pointer_cast(data + i * num_pixels);
+        auto in = thrust::device_pointer_cast(sinogram + i * num_pixels);
         auto out = thrust::device_pointer_cast(pitched_sinogram_ + i * pitch_);
         thrust::copy(in, in + num_pixels, out);
       }
@@ -369,7 +369,7 @@ Reconstructor_t<e_device>::Reconstructor_t(const Config &config) : config_(confi
   GUANACO_ASSERT(config_.is_valid());
 }
 
-void Reconstructor_t<e_device>::operator()(float *sinogram,
+void Reconstructor_t<e_device>::operator()(const float *sinogram,
                                            float *reconstruction) const {
   Filter<e_device> filter_(config_.num_pixels, config_.num_angles);
 
@@ -410,7 +410,7 @@ void Reconstructor_t<e_device>::operator()(float *sinogram,
   thrust::copy(reconstruction_d.begin(), reconstruction_d.end(), reconstruction);
 }
 
-void Reconstructor_t<e_device>::project(float *sinogram_d,
+void Reconstructor_t<e_device>::project(const float *sinogram_d,
                                         float *reconstruction_d) const {
   auto scale = M_PI / (2 * config_.num_angles * config_.pixel_area());
   scale *= config_.pixel_size;  // ONLY VALID FOR SQUARE

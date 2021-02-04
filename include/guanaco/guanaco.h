@@ -157,10 +157,10 @@ class Reconstructor_t<e_host> {
 public:
   Reconstructor_t(const Config &config);
 
-  void operator()(float *sinogram, float *reconstruction) const;
+  void operator()(const float *sinogram, float *reconstruction) const;
 
 protected:
-  void project(float *sinogram, float *reconstruction) const;
+  void project(const float *sinogram, float *reconstruction) const;
 
   Config config_;
   Filter<e_host> filter_;
@@ -171,10 +171,10 @@ class Reconstructor_t<e_device> {
 public:
   Reconstructor_t(const Config &config);
 
-  void operator()(float *sinogram, float *reconstruction) const;
+  void operator()(const float *sinogram, float *reconstruction) const;
 
 protected:
-  void project(float *sinogram, float *reconstruction) const;
+  void project(const float *sinogram, float *reconstruction) const;
 
   Config config_;
 };
@@ -185,7 +185,7 @@ public:
 
   Reconstructor(const Config &config) : config_(config) {}
 
-  void operator()(float *sinogram, float *reconstruction) const {
+  void operator()(const float *sinogram, float *reconstruction) const {
     switch (config_.device) {
     case e_device: {
       auto alg = Reconstructor_t<e_device>(config_);

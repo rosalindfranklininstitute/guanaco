@@ -63,7 +63,7 @@ def main(args=None):
     args = parser.parse_args(args=args)
 
     # Do the reconstruction
-    guanaco.reconstruct(
+    guanaco.reconstruct_file(
         input_filename=args.input,
         output_filename=args.output,
         device=args.device,
