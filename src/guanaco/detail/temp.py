@@ -99,32 +99,12 @@ def recon_worker(tomo, center, recon, theta, grid_shape, device, gpu_index):
                 sino[:, r:] = 0
 
             guanaco.detail.recon(
-                "host",
-                grid_shape[0],
-                grid_shape[1],
-                1.0,
-                ndet,
-                theta.astype(numpy.float64),
-                center[i],
-                sino,
-                recon[i],
-                gpu_index,
+                sino, recon[i], theta.astype(numpy.float64), center[i], 1.0, "cpu"
             )
-
         else:
             device2 = "device"
 
             sino = tomo[i]
-
             guanaco.detail.recon(
-                "device",
-                grid_shape[0],
-                grid_shape[1],
-                1.0,
-                ndet,
-                theta.astype(numpy.float64),
-                center[i],
-                sino,
-                recon[i],
-                gpu_index,
+                sino, recon[i], theta.astype(numpy.float64), center[i], 1.0, "gpu"
             )

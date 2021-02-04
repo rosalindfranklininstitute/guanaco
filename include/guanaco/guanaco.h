@@ -210,35 +210,42 @@ inline Reconstructor make_reconstructor(const Config &config) {
 }
 
 template <typename T>
-void reconstruct(const py::array_t<T> &tomo,
-                 const py::array_t<T> &centre,
-                 const py::array_t<T> &rec,
-                 const py::array_t<T> &angles,
+void reconstruct(py::array_t<T> sinogram,
+                 py::array_t<T> reconstruction,
+                 py::array_t<T> angles,
+                 float centre = 0,
                  float pixel_size = 1,
                  std::string device = "cpu",
-                 int gpu_index = -1) {}
+                 int gpu_index = -1) {
 
-template <typename T>
-void rec_temp(std::string devstr,
-              std::size_t grid_height,
-              std::size_t grid_width,
-              float pixel_size,
-              std::size_t num_pixels,
-              py::array_t<float> &angles,
-              float centre,
-              py::array_t<float> &sino,
-              py::array_t<float> &rec,
-              int gpu_index) {
+  // Check the input
+  GUANACO_ASSERT(sinogram.ndim() == 2);
+  GUANACO_ASSERT(reconstruction.ndim() == 2);
+  GUANACO_ASSERT(angles.ndim() == 1);
+  GUANACO_ASSERT(sinogram.shape()[0] == angles.size());
+  GUANACO_ASSERT(sinogram.shape()[1] == reconstruction.shape()[0]);
+  GUANACO_ASSERT(sinogram.shape()[1] == reconstruction.shape()[1]);
+/* template <typename T> */
+/* void rec_temp(std::string devstr, */
+/*               std::size_t grid_height, */
+/*               std::size_t grid_width, */
+/*               float pixel_size, */
+/*               std::size_t num_pixels, */
+/*               py::array_t<float> &angles, */
+/*               float centre, */
+/*               py::array_t<float> &sino, */
+/*               py::array_t<float> &rec, */
+/*               int gpu_index) { */
 
   // Initialise the configuration
   auto args = [&] {
     auto c = Config();
-    c.device = devstr == "host" ? e_host : e_device;
+    c.device = device == "cpu" ? e_host : e_device;
     c.gpu_index = gpu_index;
-    c.num_pixels = num_pixels;
-    c.num_angles = angles.size();
-    c.grid_height = grid_height;
-    c.grid_width = grid_width;
+    c.num_pixels = sinogram.shape()[1];
+    c.num_angles = sinogram.shape()[0];
+    c.grid_width = reconstruction.shape()[1];
+    c.grid_height = reconstruction.shape()[0];
     c.pixel_size = pixel_size;
     c.centre = centre;
     c.angles.assign(angles.data(), angles.data() + angles.size());
@@ -246,10 +253,10 @@ void rec_temp(std::string devstr,
   }();
 
   // Create the reconstructor object
-  auto recon = make_reconstructor(args);
+  auto rec = make_reconstructor(args);
 
   // Perform the reconstruction
-  recon(sino.mutable_data(), rec.mutable_data());
+  rec(sinogram.mutable_data(), reconstruction.mutable_data());
 }
 
 }  // namespace guanaco

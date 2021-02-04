@@ -24,14 +24,14 @@
 namespace py = pybind11;
 
 PYBIND11_MODULE(guanaco_ext, m) {
-  m.def("recon", &guanaco::rec_temp<float>);
+  /* m.def("recon", &guanaco::rec_temp<float>); */
 
   m.def("recon",
         &guanaco::reconstruct<float>,
-        py::arg("tomo"),
+        py::arg("sinogram"),
+        py::arg("reconstruction"),
+        py::arg("angles"),
         py::arg("centre"),
-        py::arg("rec"),
-        py::arg("theta"),
         py::arg("pixel_size") = 1.0,
         py::arg("device") = "cpu",
         py::arg("gpu_index") = -1);
