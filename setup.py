@@ -16,10 +16,11 @@ def main():
     setup(
         package_dir={"guanaco": "src"},
         packages=["guanaco"],
-        install_requires=["numpy"],
+        install_requires=["mrcfile", "numpy"],
         setup_requires=["pytest-runner"],
         tests_require=tests_require,
         test_suite="test",
+        entry_points={"console_scripts": ["guanaco=guanaco.command_line:main"]},
         extras_require={
             "build_sphinx": ["sphinx", "sphinx_rtd_theme"],
             "test": tests_require,

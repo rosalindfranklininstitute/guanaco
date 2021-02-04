@@ -1,0 +1,10 @@
+xsize: 1500
+ysize: 200
+nangles: 90
+centre: 500
+position: [ 500, 100, 750 ]
+size: [ 200, 200, 200 ]
+df: 20000
+Cs: 2.7
+pixel_size: 1
+
