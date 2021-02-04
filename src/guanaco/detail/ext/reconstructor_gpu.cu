@@ -82,7 +82,7 @@ public:
 
   using vector_type = std::vector<float>;
 
-  Filter(size_type num_pixels, size_type num_angles);
+  Filter(size_type num_pixels, size_type num_angles, size_type num_defocus);
 
   void operator()(float *data) const;
 
@@ -93,17 +93,20 @@ protected:
 
   size_type num_pixels_;
   size_type num_angles_;
+  size_type num_defocus_;
   vector_type filter_;
   FFT<e_device> fft_;
 };
 
-Filter<e_device>::Filter(size_type num_pixels, size_type num_angles)
+Filter<e_device>::Filter(size_type num_pixels, size_type num_angles, size_type num_defocus)
     : num_pixels_(num_pixels),
       num_angles_(num_angles),
+      num_defocus_(num_defocus),
       filter_(create_filter(num_pixels_ + 1)),
-      fft_(num_pixels_ * 2, num_angles_) {
+      fft_(num_pixels_ * 2, num_angles_*num_defocus_) {
   GUANACO_ASSERT(num_pixels_ > 0);
   GUANACO_ASSERT(num_angles_ > 0);
+  GUANACO_ASSERT(num_defocus_ > 0);
 }
 
 const Filter<e_device>::vector_type &Filter<e_device>::filter() const {
@@ -134,8 +137,8 @@ void Filter<e_device>::operator()(float *data) const {
   using device_vector_c = thrust::device_vector<thrust::complex<float>>;
 
   // Copy the filter to the device for each projection
-  auto filter_d = device_vector_c(num_angles_ * filter_.size(), 0);
-  for (auto i = 0; i < num_angles_; ++i) {
+  auto filter_d = device_vector_c(num_defocus_ * num_angles_ * filter_.size(), 0);
+  for (auto i = 0; i < num_defocus_ * num_angles_; ++i) {
     thrust::copy(filter_.begin(), filter_.end(), filter_d.begin() + i * filter_.size());
   }
 
@@ -143,9 +146,9 @@ void Filter<e_device>::operator()(float *data) const {
   // of the data, we are going from real to complex so the output array only
   // stores the non-redundant complex coefficients so the complex array
   // requires (N/2 + 1) elements.
-  auto rows_c = device_vector_c(num_angles_ * filter_.size(), 0);
-  auto rows_f = device_vector_f(num_angles_ * num_pixels_ * 2, 0);
-  for (auto i = 0; i < num_angles_; ++i) {
+  auto rows_c = device_vector_c(num_defocus_ * num_angles_ * filter_.size(), 0);
+  auto rows_f = device_vector_f(num_defocus_ * num_angles_ * num_pixels_ * 2, 0);
+  for (auto i = 0; i < num_defocus_ * num_angles_; ++i) {
     thrust::copy(data + i * num_pixels_,
                  data + i * num_pixels_ + num_pixels_,
                  rows_f.begin() + i * num_pixels_ * 2);
@@ -172,7 +175,7 @@ void Filter<e_device>::operator()(float *data) const {
     });
 
   // Copy the filtered data back into the array
-  for (int i = 0; i < num_angles_; ++i) {
+  for (int i = 0; i < num_defocus_ * num_angles_; ++i) {
     thrust::copy(rows_f.begin() + i * num_pixels_ * 2,
                  rows_f.begin() + i * num_pixels_ * 2 + num_pixels_,
                  data + i * num_pixels_);
@@ -371,7 +374,10 @@ Reconstructor_t<e_device>::Reconstructor_t(const Config &config) : config_(confi
 
 void Reconstructor_t<e_device>::operator()(const float *sinogram,
                                            float *reconstruction) const {
-  Filter<e_device> filter_(config_.num_pixels, config_.num_angles);
+  Filter<e_device> filter_(
+      config_.num_pixels, 
+      config_.num_angles,
+      config_.num_defocus);
 
   // A function to set the gpu index
   auto set_gpu_index = [](int index) {

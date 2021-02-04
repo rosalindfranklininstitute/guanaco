@@ -55,7 +55,7 @@ struct Config {
         centre(0) {}
 
   size_type sino_size() const {
-    return num_pixels * num_angles;
+    return num_pixels * num_angles * num_defocus;
   }
 
   size_type grid_size() const {
@@ -70,8 +70,9 @@ struct Config {
     return (device == e_host || device == e_device) && grid_height > 0
            && grid_width > 0 && num_pixels > 0 && pixel_size > 0
            && num_angles > 0
+           && num_defocus > 0
            && angles.size() == num_angles
-           && defocus.size() == num_defocus;
+           && (defocus.size() == num_defocus || (defocus.size() == 0 && num_defocus == 1));
   }
 };
 
@@ -159,6 +160,7 @@ class Reconstructor_t {};
 template <>
 class Reconstructor_t<e_host> {
 public:
+  using size_type = std::size_t;
   Reconstructor_t(const Config &config);
 
   void operator()(const float *sinogram, float *reconstruction) const;
@@ -173,6 +175,7 @@ protected:
 template <>
 class Reconstructor_t<e_device> {
 public:
+  using size_type = std::size_t;
   Reconstructor_t(const Config &config);
 
   void operator()(const float *sinogram, float *reconstruction) const;

@@ -123,6 +123,7 @@ def reconstruction_worker(
                 sino[:, r:] = 0
         else:
             sino = sinogram[i]
+
         guanaco.detail.recon(
             sino,
             reconstruction[i],
