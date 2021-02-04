@@ -19,12 +19,55 @@
  * along with guanaco-ctf. If not, see <http:// www.gnu.org/licenses/>.
  */
 #include <pybind11/pybind11.h>
+#include <pybind11/numpy.h>
 #include <guanaco/guanaco.h>
 
 namespace py = pybind11;
 
+namespace guanaco {
+
+  template <typename T>
+  void reconstruct(py::array_t<T> sinogram,
+                   py::array_t<T> reconstruction,
+                   py::array_t<T> angles,
+                   float centre = 0,
+                   float pixel_size = 1,
+                   std::string device = "cpu",
+                   int gpu_index = -1) {
+
+    // Check the input
+    GUANACO_ASSERT(sinogram.ndim() == 2);
+    GUANACO_ASSERT(reconstruction.ndim() == 2);
+    GUANACO_ASSERT(angles.ndim() == 1);
+    GUANACO_ASSERT(sinogram.shape()[0] == angles.size());
+    GUANACO_ASSERT(sinogram.shape()[1] == reconstruction.shape()[0]);
+    GUANACO_ASSERT(sinogram.shape()[1] == reconstruction.shape()[1]);
+
+    // Initialise the configuration
+    auto args = [&] {
+      auto c = Config();
+      c.device = device == "cpu" ? e_host : e_device;
+      c.gpu_index = gpu_index;
+      c.num_pixels = sinogram.shape()[1];
+      c.num_angles = sinogram.shape()[0];
+      c.grid_width = reconstruction.shape()[1];
+      c.grid_height = reconstruction.shape()[0];
+      c.pixel_size = pixel_size;
+      c.centre = centre;
+      c.angles.assign(angles.data(), angles.data() + angles.size());
+      return c;
+    }();
+
+    // Create the reconstructor object
+    auto rec = make_reconstructor(args);
+
+    // Perform the reconstruction
+    rec(sinogram.mutable_data(), reconstruction.mutable_data());
+  }
+
+}
+
 PYBIND11_MODULE(guanaco_ext, m) {
-  /* m.def("recon", &guanaco::rec_temp<float>); */
 
   m.def("recon",
         &guanaco::reconstruct<float>,
