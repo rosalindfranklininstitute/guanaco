@@ -39,6 +39,7 @@ def reconstruction_dispatcher(
     reconstruction,
     centre,
     angles,
+    pixel_size=1,
     device="cpu",
     ncore=None,
     nchunk=None,
@@ -67,7 +68,13 @@ def reconstruction_dispatcher(
     if ncore == 1:
         for s in slices:
             reconstruction_worker(
-                sinogram[s], reconstruction[s], centre[s], angles, device, None
+                sinogram[s],
+                reconstruction[s],
+                centre[s],
+                angles,
+                pixel_size,
+                device,
+                None,
             )
     else:
         with cf.ThreadPoolExecutor(ncore) as e:
@@ -78,17 +85,24 @@ def reconstruction_dispatcher(
                     reconstruction[s],
                     centre[s],
                     angles,
+                    pixel_size,
                     device,
                     gpu,
                 )
 
 
-def reconstruction_worker(sinogram, reconstruction, centre, angles, device, gpu_index):
+def reconstruction_worker(
+    sinogram, reconstruction, centre, angles, pixel_size, device, gpu_index
+):
 
     if gpu_index is None:
         gpu_index = 0
 
-    nslices, nang, ndet = sinogram.shape
+    if len(sinogram.shape) == 3:
+        nslices, nang, ndet = sinogram.shape
+    else:
+        nslices, ndef, nang, ndet = sinogram.shape
+
     for i in range(nslices):
 
         if device == "cpu":
@@ -107,5 +121,11 @@ def reconstruction_worker(sinogram, reconstruction, centre, angles, device, gpu_
         else:
             sino = sinogram[i]
         guanaco.detail.recon(
-            sino, reconstruction[i], angles, centre[i], 1.0, device, gpu_index=gpu_index
+            sino,
+            reconstruction[i],
+            angles,
+            centre[i],
+            pixel_size,
+            device,
+            gpu_index=gpu_index,
         )

@@ -49,7 +49,11 @@ def main(args=None):
         help="Set the transform to use",
     )
     parser.add_argument(
-        "-n,--ncore", dest="ncore", default=None, help="Set the number of cores to use"
+        "-n,--ncore",
+        dest="ncore",
+        default=None,
+        type=int,
+        help="Set the number of cores to use",
     )
     parser.add_argument(
         "--chunk_size",
@@ -59,6 +63,30 @@ def main(args=None):
         help="Set the number of rows to reconstruct",
     )
 
+    parser.add_argument(
+        "--df",
+        dest="defocus",
+        default=None,
+        type=float,
+        help="The defocus at the rotation axis",
+    )
+
+    parser.add_argument(
+        "--Cs",
+        dest="spherical_aberration",
+        default=0,
+        type=float,
+        help="The spherical aberration",
+    )
+
+    parser.add_argument(
+        "--ndf",
+        dest="num_defocus",
+        default=None,
+        type=int,
+        help="The number of defocus steps to use",
+    )
+
     # Parse the arguments
     args = parser.parse_args(args=args)
 
@@ -66,6 +94,9 @@ def main(args=None):
     guanaco.reconstruct_file(
         input_filename=args.input,
         output_filename=args.output,
+        defocus=args.defocus,
+        num_defocus=args.num_defocus,
+        spherical_aberration=args.spherical_aberration,
         device=args.device,
         ncore=args.ncore,
         transform=args.transform,

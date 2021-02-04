@@ -26,22 +26,6 @@ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH True)
 # Build the guanaco-ctf library
 ##############################################################################
 
-# add_library(guanaco SHARED ${ASTRA_SOURCE})
-# set_target_properties(guanaco PROPERTIES CXX_VISIBILITY_PRESET "default")
-# set_target_properties(guanaco PROPERTIES CUDA_VISIBILITY_PRESET "default")
-# target_compile_definitions(guanaco PUBLIC ASTRA_CUDA)
-# target_compile_definitions(guanaco PUBLIC DLL_EXPORTS)
-# target_include_directories(guanaco PUBLIC 
-  # include
-  # include/astra
-  # /home/upc86896/Software/astra-toolbox/lib/include
-  # ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
-# target_compile_features(guanaco PUBLIC cxx_std_14)
-# set_property(TARGET guanaco PROPERTY INTERPROCEDURAL_OPTIMIZATION True)
-# target_link_libraries(guanaco PUBLIC
-#   ${CUDA_LIBRARIES} 
-#   ${CUDA_CUFFT_LIBRARIES})
-
 # Add a C/C++ extension
 pybind11_add_module(guanaco_ext 
   src/guanaco/detail/ext/reconstructor.cpp
@@ -53,13 +37,6 @@ set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --extended-lambda")
 # Not specifying CUDA architecture throws and error.
 # Setting this option does not pass arch flag to compiler
 set_property(TARGET guanaco_ext PROPERTY CUDA_ARCHITECTURES OFF)
-
-
-target_compile_definitions(guanaco_ext PUBLIC ASTRA_CUDA)
-
-
-
-
 
 # Ensure we are using C++11
 target_compile_features(guanaco_ext PUBLIC cxx_std_14)

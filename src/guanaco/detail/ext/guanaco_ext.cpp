@@ -25,14 +25,44 @@
 namespace py = pybind11;
 
 namespace guanaco {
+  
+  /**
+   * Allow conversion from string to enum
+   */
+  template <typename T>
+  py::enum_<T> enum_wrapper(const py::handle& scope, const char* name) {
+    py::enum_<T> obj(scope, name);
+    obj.def("__init__", [](T& v, const std::string& str) {
+      py::object obj = py::cast(v);
+      py::dict entries = obj.get_type().attr("__entries");
+      for (auto item : entries) {
+        if (str == item.first.cast<std::string>()) {
+          v = item.second.cast<py::tuple>()[0].cast<T>();
+          return;
+        }
+      }
+      std::string tname = typeid(T).name();
+      py::detail::clean_type_id(tname);
+      throw py::value_error("\"" + std::string(str)
+                        + "\" is not a valid value for enum type " + tname);
+    });
 
+    // Allow implicit conversions from string and int to enum
+    py::implicitly_convertible<py::str, T>();
+    py::implicitly_convertible<int, T>();
+    return obj;
+  }
+
+  /**
+   * A short wrapper function to call the reconstruction code
+   */
   template <typename T>
   void reconstruct(const py::array_t<T> &sinogram,
                    py::array_t<T> &reconstruction,
                    const py::array_t<T> angles,
                    float centre = 0,
                    float pixel_size = 1,
-                   std::string device = "cpu",
+                   eDevice device = e_host,
                    int gpu_index = -1) {
 
     // Check the input
@@ -46,7 +76,7 @@ namespace guanaco {
     // Initialise the configuration
     auto args = [&] {
       auto c = Config();
-      c.device = device == "cpu" ? e_host : e_device;
+      c.device = device;
       c.gpu_index = gpu_index;
       c.num_pixels = sinogram.shape()[1];
       c.num_angles = sinogram.shape()[0];
@@ -68,7 +98,14 @@ namespace guanaco {
 }
 
 PYBIND11_MODULE(guanaco_ext, m) {
+  
+  // Export the device enum
+  guanaco::enum_wrapper<guanaco::eDevice>(m, "eDevice")
+    .value("cpu", guanaco::e_host)
+    .value("gpu", guanaco::e_device)
+    .export_values();
 
+  // Export the reconstruction function
   m.def("recon",
         &guanaco::reconstruct<float>,
         py::arg("sinogram"),
@@ -76,6 +113,6 @@ PYBIND11_MODULE(guanaco_ext, m) {
         py::arg("angles"),
         py::arg("centre"),
         py::arg("pixel_size") = 1.0,
-        py::arg("device") = "cpu",
+        py::arg("device") = guanaco::e_host,
         py::arg("gpu_index") = -1);
 }
