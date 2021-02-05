@@ -118,10 +118,103 @@ def reconstruct(
     return reconstruction
 
 
+def get_corrected_projections(
+    projections,
+    centre=None,
+    pixel_size=1,
+    energy=None,
+    defocus=None,
+    num_defocus=None,
+    spherical_aberration=None,
+    intermediate_filename="GUANACO_CORRECTED.dat",
+):
+    # Set the min and max defoci
+    min_defocus = 0
+    max_defocus = 0
+
+    # If we have no defocus set then do nothing. Other correct them
+    if defocus is not None:
+
+        # Check the number of defoci
+        if num_defocus == None or num_defocus <= 0:
+            num_defocus = 1
+
+        # Get the min and max defoci and the step
+        if num_defocus == 1:
+            min_defocus = defocus
+            max_defocus = defocus
+            step_defocus = 0
+        elif num_defocus > 1:
+            shape = projections.shape
+            z0 = defocus - centre * pixel_size
+            z1 = defocus + centre * pixel_size
+            z2 = defocus - (shape[2] - centre) * pixel_size
+            z3 = defocus + (shape[2] - centre) * pixel_size
+            min_defocus = min([z0.min(), z1.min(), z2.min(), z3.min()])
+            max_defocus = max([z0.max(), z1.max(), z2.max(), z3.max()])
+            step_defocus = (max_defocus - min_defocus) / (num_defocus - 1)
+
+        # The shape of the corrected projection array
+        corrected_shape = (
+            projections.shape[0],
+            num_defocus,
+            projections.shape[1],
+            projections.shape[2],
+        )
+
+        # Create a memory mapped file of the correct dimension
+        corrected_projections = numpy.memmap(
+            intermediate_filename, mode="w+", dtype="float32", shape=corrected_shape
+        )
+
+        # Precompute the CTF for each defoci
+        ctf_array = []
+        for d in range(num_defocus):
+
+            # Get the defocus
+            df = min_defocus + d * step_defocus
+
+            # Generate the ctf
+            print("Computing CTF for defocus = %.2f" % df)
+            ctf_array.append(
+                guanaco.ctf2d(
+                    corrected_shape[2:],
+                    pixel_size=pixel_size,
+                    energy=energy,
+                    defocus=df,
+                    spherical_aberration=spherical_aberration,
+                    centre=False,
+                )
+            )
+
+        # Loop through all the projections and defoci and perform the CTF
+        # correction
+        for z in range(projections.shape[0]):
+            image = projections[z, :, :]
+            for d, ctf in enumerate(ctf_array):
+                print(
+                    "Correcting image %d/%d with defocus %d/%d"
+                    % (z, projections.shape[0], d, len(ctf_array))
+                )
+                corrected_projections[z, d, :, :] = guanaco.correct(image, ctf)
+
+        # Remove the dimension for corrections if only one correction
+        if corrected_projections.shape[1] == 1:
+            corrected_projections = corrected_projections.reshape(projections.shape)
+
+        # Set the projections to be the corrected projections
+        projections = corrected_projections
+
+    # Return the projections with the min and max defoci
+    return (projections, min_defocus, max_defocus)
+
+
 def reconstruct_file(
     input_filename,
     output_filename,
+    corrected_filename="GUANACO_CORRECTED.dat",
     centre=None,
+    energy=None,
     defocus=None,
     num_defocus=None,
     spherical_aberration=None,
@@ -178,12 +271,6 @@ def reconstruct_file(
         # Get the projection data
         projections = infile.data
 
-        # Transform the projections
-        if transform == "minus_log":
-            projections = -numpy.log(projections)
-        elif transform == "minus":
-            projections = -projections
-
         # Set the reconstruction shape
         output_shape = (
             projections.shape[1],
@@ -191,60 +278,24 @@ def reconstruct_file(
             projections.shape[2],
         )
 
-        # Set the sinogram order.
-        sinogram_order = False
-
         # Get the rotation centre
-        centre = get_centre(projections.shape, centre, sinogram_order)
+        centre = get_centre(projections.shape, centre, False)
 
-        min_defocus = 0
-        max_defocus = 0
-        intermediate_filename = "corrected.dat"
-        if defocus is not None:
-            if num_defocus == None:
-                num_defocus = 1
-                defocus_array = numpy.array([defocus], dtype="float32")
-            else:
-                shape = projections.shape
-                z0 = defocus - centre * pixel_size
-                z1 = defocus + centre * pixel_size
-                z2 = defocus - (shape[2] - centre) * pixel_size
-                z3 = defocus + (shape[2] - centre) * pixel_size
-                min_defocus = min([z0.min(), z1.min(), z2.min(), z3.min()])
-                max_defocus = max([z0.max(), z1.max(), z2.max(), z3.max()])
-                step_defocus = (max_defocus - min_defocus) / (num_defocus - 1)
-                defocus_array = min_defocus + numpy.arange(num_defocus) * step_defocus
+        # Get the corrected projections.
+        projections, min_defocus, max_defocus = get_corrected_projections(
+            projections,
+            centre,
+            pixel_size,
+            energy,
+            defocus,
+            num_defocus,
+            spherical_aberration,
+            corrected_filename,
+        )
 
-            # The shape of the corrected projection array
-            corrected_shape = (
-                projections.shape[1],
-                num_defocus,
-                projections.shape[0],
-                projections.shape[2],
-            )
-
-            # Create a memory mapped file of the correct dimension
-            corrected_projections = numpy.memmap(
-                intermediate_filename, mode="w+", dtype="float32", shape=corrected_shape
-            )
-
-            for z in range(projections.shape[0]):
-                image = projections[z, :, :]
-                for d in range(len(defocus_array)):
-                    # Do the CTF correction
-                    corrected_projections[:, d, z, :] = image
-
-            # Remove the dimension for corrections if only one correction
-            if corrected_projections.shape[1] == 1:
-                corrected_shape = (
-                    projections.shape[1],
-                    projections.shape[0],
-                    projections.shape[2],
-                )
-                corrected_projections = corrected_projections.reshape(corrected_shape)
-
-            projections = corrected_projections
-            sinogram_order = True
+        # Transform the corrected projections
+        if transform == "minus":
+            projections[:] = -projections[:]
 
         # Open the output file
         print("Writing reconstruction to %s" % output_filename)
@@ -264,7 +315,7 @@ def reconstruct_file(
                 pixel_size=pixel_size,
                 min_defocus=min_defocus - defocus,
                 max_defocus=max_defocus - defocus,
-                sinogram_order=sinogram_order,
+                sinogram_order=False,
                 device=device,
                 ncore=ncore,
             )

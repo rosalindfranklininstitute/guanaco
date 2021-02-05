@@ -30,9 +30,24 @@ def main(args=None):
 
     # Create the command line parser
     parser = argparse.ArgumentParser(description="Reconstruct")
-    parser.add_argument("-o", dest="output", default="rec.mrc", help="The output file")
     parser.add_argument(
-        "-i", dest="input", default=None, required=True, help="The input file"
+        "-o",
+        dest="output",
+        default="rec.mrc",
+        help="The output file containing the reconstructed projections.",
+    )
+    parser.add_argument(
+        "-i",
+        dest="input",
+        default=None,
+        required=True,
+        help="The input file containing a stack of projection images.",
+    )
+    parser.add_argument(
+        "--corrected-filename",
+        dest="corrected_filename",
+        default="GUANACO_CORRECTED.dat",
+        help="The intermediate file containing the CTF corrected projections",
     )
     parser.add_argument(
         "-d,--device",
@@ -45,8 +60,8 @@ def main(args=None):
         "--transform",
         dest="transform",
         default=None,
-        choices=["none", "minus_log", "minus"],
-        help="Set the transform to use",
+        choices=["none", "minus"],
+        help="Set the transform to use on the corrected projections",
     )
     parser.add_argument(
         "-n,--ncore",
@@ -64,7 +79,19 @@ def main(args=None):
     )
 
     parser.add_argument(
-        "--centre", dest="centre", default=None, type=float, help="The rotation centre"
+        "--centre",
+        dest="centre",
+        default=None,
+        type=float,
+        help="The rotation centre in pixels.",
+    )
+
+    parser.add_argument(
+        "--E",
+        dest="energy",
+        default=300,
+        type=float,
+        help="The energy of the incident electrons (keV)",
     )
 
     parser.add_argument(
@@ -72,7 +99,7 @@ def main(args=None):
         dest="defocus",
         default=None,
         type=float,
-        help="The defocus at the rotation axis",
+        help="The defocus at the rotation axis (A)",
     )
 
     parser.add_argument(
@@ -80,7 +107,7 @@ def main(args=None):
         dest="spherical_aberration",
         default=0,
         type=float,
-        help="The spherical aberration",
+        help="The spherical aberration (mm)",
     )
 
     parser.add_argument(
@@ -98,7 +125,9 @@ def main(args=None):
     guanaco.reconstruct_file(
         input_filename=args.input,
         output_filename=args.output,
+        corrected_filename=args.corrected_filename,
         centre=args.centre,
+        energy=args.energy,
         defocus=args.defocus,
         num_defocus=args.num_defocus,
         spherical_aberration=args.spherical_aberration,
