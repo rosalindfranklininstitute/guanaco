@@ -205,8 +205,11 @@ def get_corrected_projections(
         # Set the projections to be the corrected projections
         projections = corrected_projections
 
-    # Return the projections with the min and max defoci
-    return (projections, min_defocus, max_defocus)
+    else:
+        defocus = 0
+
+    # Return the projections with the min and max relative defoci
+    return (projections, min_defocus - defocus, max_defocus - defocus)
 
 
 def reconstruct_file(
@@ -295,7 +298,7 @@ def reconstruct_file(
 
         # Transform the corrected projections
         if transform == "minus":
-            projections[:] = -projections[:]
+            projections = -projections
 
         # Open the output file
         print("Writing reconstruction to %s" % output_filename)
@@ -313,8 +316,8 @@ def reconstruct_file(
                 reconstruction,
                 centre=centre,
                 pixel_size=pixel_size,
-                min_defocus=min_defocus - defocus,
-                max_defocus=max_defocus - defocus,
+                min_defocus=min_defocus,
+                max_defocus=max_defocus,
                 sinogram_order=False,
                 device=device,
                 ncore=ncore,
