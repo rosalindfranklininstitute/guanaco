@@ -189,7 +189,7 @@ namespace detail {
   // Declare global variables
   namespace global {
 
-    const size_t MAX_ANGLES = 2048;
+    const size_t MAX_ANGLES = 4096;
 
     typedef texture<float, 3, cudaReadModeElementType> texture_type;
 
@@ -419,27 +419,27 @@ void Reconstructor_t<e_device>::operator()(const float *sinogram,
   thrust::copy(reconstruction_d.begin(), reconstruction_d.end(), reconstruction);
 }
 
-void Reconstructor_t<e_device>::project(const float *sinogram_d,
-                                        float *reconstruction_d) const {
+void Reconstructor_t<e_device>::project(const float *sinogram,
+                                        float *reconstruction) const {
+
+  // Check the dimensions against the maximum texture size
+  cudaDeviceProp prop;
+  cudaGetDeviceProperties(&prop, 0);
+  GUANACO_ASSERT(prop.maxTexture3D[1] >= detail::g::MAX_ANGLES);
+  GUANACO_ASSERT(prop.maxTexture3D[0] >= config_.num_pixels);
+  GUANACO_ASSERT(prop.maxTexture3D[1] >= config_.num_angles);
+  GUANACO_ASSERT(prop.maxTexture3D[2] >= config_.num_defocus);
+
   auto scale = M_PI / (2 * config_.num_angles * config_.pixel_area());
   scale *= config_.pixel_size;  // ONLY VALID FOR SQUARE
 
-  // Loop through the number of angles and only do the max number of
-  // projections at a time FIXME ORDER SHOULD BE DEFOCUS
-  for (auto start_angle = 0; start_angle < config_.num_angles;
-       start_angle += detail::BP::max_angles) {
-    auto end_angle = std::min(start_angle + detail::BP::max_angles, config_.num_angles);
-    auto num_angles = end_angle - start_angle;
-    auto angles = config_.angles.data() + start_angle;
-    auto sino = sinogram_d + start_angle * config_.num_pixels;
-    auto bp = detail::BP(angles,
-                         num_angles,
-                         config_.num_defocus,
-                         config_.centre,
-                         sino,
-                         config_.num_pixels);
-    bp.launch(reconstruction_d, config_.grid_width, config_.grid_height, scale);
-  }
+  auto bp = detail::BP(config_.angles.data(),
+                       config_.num_angles,
+                       config_.num_defocus,
+                       config_.centre,
+                       sinogram,
+                       config_.num_pixels);
+  bp.launch(reconstruction, config_.grid_width, config_.grid_height, scale);
 }
 
 }  // namespace guanaco
