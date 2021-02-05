@@ -64,6 +64,10 @@ def main(args=None):
     )
 
     parser.add_argument(
+        "--centre", dest="centre", default=None, type=float, help="The rotation centre"
+    )
+
+    parser.add_argument(
         "--df",
         dest="defocus",
         default=None,
@@ -94,6 +98,7 @@ def main(args=None):
     guanaco.reconstruct_file(
         input_filename=args.input,
         output_filename=args.output,
+        centre=args.centre,
         defocus=args.defocus,
         num_defocus=args.num_defocus,
         spherical_aberration=args.spherical_aberration,

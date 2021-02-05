@@ -35,13 +35,14 @@ struct Config {
   int gpu_index;
   size_type num_pixels;
   size_type num_angles;
+  size_type num_defocus;
   size_type grid_height;
   size_type grid_width;
-  size_type num_defocus;
   float pixel_size;
   float centre;
   std::vector<float> angles;
-  std::vector<float> defocus;
+  float min_defocus;
+  float max_defocus;
 
   Config()
       : device(e_host),
@@ -52,7 +53,9 @@ struct Config {
         grid_height(0),
         grid_width(0),
         pixel_size(1),
-        centre(0) {}
+        centre(0),
+        min_defocus(0),
+        max_defocus(0) {}
 
   size_type sino_size() const {
     return num_pixels * num_angles * num_defocus;
@@ -67,12 +70,15 @@ struct Config {
   }
 
   bool is_valid() const {
-    return (device == e_host || device == e_device) && grid_height > 0
-           && grid_width > 0 && num_pixels > 0 && pixel_size > 0
-           && num_angles > 0
-           && num_defocus > 0
-           && angles.size() == num_angles
-           && (defocus.size() == num_defocus || (defocus.size() == 0 && num_defocus == 1));
+    return (device == e_host || device == e_device) 
+      && num_pixels > 0 
+      && num_angles > 0
+      && num_defocus > 0
+      && grid_height > 0
+      && grid_width > 0 
+      && pixel_size > 0
+      && min_defocus <= max_defocus
+      && angles.size() == num_angles;
   }
 };
 

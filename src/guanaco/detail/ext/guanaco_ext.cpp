@@ -60,9 +60,10 @@ template <typename T>
 void reconstruct(const py::array_t<T>& sinogram,
                  py::array_t<T>& reconstruction,
                  const py::array_t<T>& angles,
-                 const py::array_t<T>& defocus,
                  float centre = 0,
                  float pixel_size = 1,
+                 float min_defocus = 0,
+                 float max_defocus = 0,
                  eDevice device = e_host,
                  int gpu_index = -1) {
   // Check the input
@@ -76,7 +77,6 @@ void reconstruct(const py::array_t<T>& sinogram,
     GUANACO_ASSERT(sinogram.shape()[1] == reconstruction.shape()[0]);
     GUANACO_ASSERT(sinogram.shape()[1] == reconstruction.shape()[1]);
   } else {
-    GUANACO_ASSERT(sinogram.shape()[0] == defocus.size());
     GUANACO_ASSERT(sinogram.shape()[1] == angles.size());
     GUANACO_ASSERT(sinogram.shape()[2] == reconstruction.shape()[0]);
     GUANACO_ASSERT(sinogram.shape()[2] == reconstruction.shape()[1]);
@@ -89,13 +89,14 @@ void reconstruct(const py::array_t<T>& sinogram,
     c.gpu_index = gpu_index;
     c.num_pixels = sinogram.shape()[sinogram.ndim() - 1];
     c.num_angles = angles.size();
-    c.num_defocus = defocus.size() == 0 ? 1 : defocus.size();
+    c.num_defocus = sinogram.ndim() == 2 ? 1 : sinogram.shape()[0];
     c.grid_width = reconstruction.shape()[1];
     c.grid_height = reconstruction.shape()[0];
     c.pixel_size = pixel_size;
+    c.min_defocus = min_defocus;
+    c.max_defocus = max_defocus;
     c.centre = centre;
     c.angles.assign(angles.data(), angles.data() + angles.size());
-    c.defocus.assign(defocus.data(), defocus.data() + defocus.size());
     return c;
   }();
 
@@ -121,9 +122,10 @@ PYBIND11_MODULE(guanaco_ext, m) {
         py::arg("sinogram"),
         py::arg("reconstruction"),
         py::arg("angles"),
-        py::arg("defocus"),
         py::arg("centre"),
         py::arg("pixel_size") = 1.0,
+        py::arg("min_defocus") = 0.0,
+        py::arg("max_defocus") = 0.0,
         py::arg("device") = guanaco::e_host,
         py::arg("gpu_index") = -1);
 }

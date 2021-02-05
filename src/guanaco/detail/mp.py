@@ -39,8 +39,9 @@ def reconstruction_dispatcher(
     reconstruction,
     centre,
     angles,
-    defocus=None,
     pixel_size=1,
+    min_defocus=0,
+    max_defocus=0,
     device="cpu",
     ncore=None,
     nchunk=None,
@@ -73,8 +74,9 @@ def reconstruction_dispatcher(
                 reconstruction[s],
                 centre[s],
                 angles,
-                defocus,
                 pixel_size,
+                min_defocus,
+                max_defocus,
                 device,
                 None,
             )
@@ -87,15 +89,24 @@ def reconstruction_dispatcher(
                     reconstruction[s],
                     centre[s],
                     angles,
-                    defocus,
                     pixel_size,
+                    min_defocus,
+                    max_defocus,
                     device,
                     gpu,
                 )
 
 
 def reconstruction_worker(
-    sinogram, reconstruction, centre, angles, defocus, pixel_size, device, gpu_index
+    sinogram,
+    reconstruction,
+    centre,
+    angles,
+    pixel_size,
+    min_defocus,
+    max_defocus,
+    device,
+    gpu_index,
 ):
 
     if gpu_index is None:
@@ -128,9 +139,10 @@ def reconstruction_worker(
             sino,
             reconstruction[i],
             angles,
-            defocus,
             centre[i],
             pixel_size,
+            min_defocus,
+            max_defocus,
             device,
-            gpu_index=gpu_index,
+            gpu_index,
         )

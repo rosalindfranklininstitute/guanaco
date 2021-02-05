@@ -208,22 +208,27 @@ namespace detail {
    * A functor that implements the back projection per voxel
    */
   struct BPFunction {
-    static const size_t max_angles = g::MAX_ANGLES;
 
     size_t num_angles;
     size_t grid_width;
     size_t grid_height;
-    float scale;
+    float output_scale;
+    float dscale;
+    float doffset;
 
     BPFunction(size_t num_angles_,
                size_t grid_width_,
                size_t grid_height_,
-               float scale_)
+               float output_scale_,
+               float dscale_,
+               float doffset_)
         : num_angles(num_angles_),
           grid_width(grid_width_),
           grid_height(grid_height_),
-          scale(scale_) {
-      GUANACO_ASSERT(num_angles_ <= max_angles);
+          output_scale(output_scale_),
+          dscale(dscale_),
+          doffset(doffset_) {
+      GUANACO_ASSERT(num_angles_ <= g::MAX_ANGLES);
     }
 
     __device__ float operator()(size_t index, float voxel) const {
@@ -246,34 +251,52 @@ namespace detail {
 
         // Compute the pixel coordinate
         const float pixel = a * x + b * y + c;
+        const float height = b * x + a * y;
+        const float defocus = height * dscale + doffset;
 
         // Sum the sinogram value for the pixel and angle
-        value += tex3D(g::sinogram, pixel, angle + 0.5, 0.5) * scale;
+        value += tex3D(g::sinogram, pixel, angle + 0.5, defocus) * scale;
       }
 
       // Add the contribution to the voxel
-      return voxel + value * scale;
+      return voxel + value * output_scale;
     }
   };
 
   struct BP {
     using size_type = std::size_t;
 
-    static const size_type max_angles = BPFunction::max_angles;
-
     cudaArray *sinogram_array_;
+    size_type num_pixels_;
     size_type num_angles_;
     size_type num_defocus_;
+    float pixel_size_;
+    float min_defocus_;
+    float max_defocus_;
 
-    BP(const float *angles,
+    BP(size_type num_pixels,
        size_type num_angles,
        size_type num_defocus,
        float centre,
+       float pixel_size,
+       float min_defocus,
+       float max_defocus,
        const float *sinogram,
-       size_type num_pixels)
-        : sinogram_array_(nullptr), num_angles_(num_angles), num_defocus_(num_defocus) {
-      // Check number of angles
-      GUANACO_ASSERT(num_angles <= max_angles);
+       const float *angles)
+        : sinogram_array_(nullptr), 
+          num_pixels_(num_pixels), 
+          num_angles_(num_angles), 
+          num_defocus_(num_defocus), 
+          pixel_size_(pixel_size), 
+          min_defocus_(min_defocus), 
+          max_defocus_(max_defocus) {
+
+      // Check input
+      GUANACO_ASSERT(num_pixels_ > 0);
+      GUANACO_ASSERT(num_angles_ > 0);
+      GUANACO_ASSERT(num_defocus_ > 0);
+      GUANACO_ASSERT(pixel_size_ > 0);
+      GUANACO_ASSERT(max_defocus_ >= min_defocus_);
 
       // Copy the angle data to device symbols
       copy_angles(angles, num_angles_, centre);
@@ -291,7 +314,7 @@ namespace detail {
       // pointer as normal (no idea) so I have to pass a pointer to the
       // symbol array pointer and then dereference!
       auto copy = [](auto symbol, auto data, auto n) {
-        GUANACO_ASSERT(n <= max_angles);
+        GUANACO_ASSERT(n <= g::MAX_ANGLES);
         auto error = cudaMemcpyToSymbol(
           *symbol, data, n * sizeof(float), 0, cudaMemcpyHostToDevice);
         GUANACO_ASSERT_CUDA(error == cudaSuccess);
@@ -347,10 +370,13 @@ namespace detail {
       copy_params.kind = cudaMemcpyDeviceToDevice;
       cudaMemcpy3D(&copy_params);
 
-      // Set texture parameters
+      // Set texture parameters.
+      // For examples and pixels outside the expected range, this sets the
+      // value to zero (border). For defocus outside of expected range, use the
+      // closest (clamp).
       g::sinogram.addressMode[0] = cudaAddressModeBorder;
       g::sinogram.addressMode[1] = cudaAddressModeBorder;
-      g::sinogram.addressMode[2] = cudaAddressModeBorder;
+      g::sinogram.addressMode[2] = cudaAddressModeClamp;
       g::sinogram.filterMode = cudaFilterModeLinear;
       g::sinogram.normalized = false;
 
@@ -363,10 +389,24 @@ namespace detail {
                 size_type grid_width,
                 size_type grid_height,
                 float scale) const {
+      // Check the input
+      GUANACO_ASSERT(num_defocus_ == 1 || max_defocus_ > min_defocus_);
+
+      // Compute the defocus scale and offset
+      auto dscale = num_defocus_ > 1 
+        ? num_defocus_ * pixel_size_ / (max_defocus_ - min_defocus_)
+        : 0;
+      auto doffset = -dscale * (min_defocus_ / pixel_size_);
+
+      // Get some other quantities
       auto grid_size = grid_width * grid_height;
       auto index = thrust::counting_iterator<size_t>(0);
       auto recon = thrust::device_pointer_cast(reconstruction);
-      BPFunction func(num_angles_, grid_width, grid_height, scale);
+
+      // Initialise the functor
+      BPFunction func(num_angles_, grid_width, grid_height, scale, dscale, doffset);
+
+      // Do the reconstruction
       thrust::transform(index, index + grid_size, recon, recon, func);
     }
   };
@@ -430,15 +470,22 @@ void Reconstructor_t<e_device>::project(const float *sinogram,
   GUANACO_ASSERT(prop.maxTexture3D[1] >= config_.num_angles);
   GUANACO_ASSERT(prop.maxTexture3D[2] >= config_.num_defocus);
 
+  // Compute the scale
   auto scale = M_PI / (2 * config_.num_angles * config_.pixel_area());
   scale *= config_.pixel_size;  // ONLY VALID FOR SQUARE
 
-  auto bp = detail::BP(config_.angles.data(),
+  // Initialise the back projector class
+  auto bp = detail::BP(config_.num_pixels,
                        config_.num_angles,
                        config_.num_defocus,
                        config_.centre,
+                       config_.pixel_size,
+                       config_.min_defocus,
+                       config_.max_defocus,
                        sinogram,
-                       config_.num_pixels);
+                       config_.angles.data());
+
+  // Launch the back projector
   bp.launch(reconstruction, config_.grid_width, config_.grid_height, scale);
 }
 

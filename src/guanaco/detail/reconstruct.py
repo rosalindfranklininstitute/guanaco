@@ -29,13 +29,25 @@ import guanaco.detail.mp
 __all__ = ["reconstruct_file", "reconstruct"]
 
 
+def get_centre(shape, centre, sinogram_order=True):
+    if not sinogram_order:
+        shape = list(shape)
+        shape[0], shape[-2] = shape[-2], shape[0]
+    if centre is None:
+        centre = numpy.ones(shape[0], dtype="float32") * (shape[-1] / 2.0)
+    elif numpy.array(centre).size == 1:
+        centre = numpy.ones(shape[0], dtype="float32") * centre
+    return centre.astype(dtype="float32", copy=False)
+
+
 def reconstruct(
     tomogram,
     angles,
     reconstruction=None,
     centre=None,
-    defocus=None,
     pixel_size=1,
+    min_defocus=0,
+    max_defocus=0,
     sinogram_order=False,
     device="cpu",
     ncore=None,
@@ -78,20 +90,6 @@ def reconstruct(
             assert reconstruction.shape[2] == sinogram.shape[-1]
         return reconstruction.astype(dtype="float32", copy=False)
 
-    def get_centre(shape, centre):
-        if centre is None:
-            centre = numpy.ones(shape[0], dtype="float32") * (shape[-1] / 2.0)
-        elif numpy.array(centre).size == 1:
-            centre = numpy.ones(shape[0], dtype="float32") * centre
-        return centre.astype(dtype="float32", copy=False)
-
-    def get_defocus(shape, defocus):
-        if len(shape) == 4:
-            assert len(defocus) == shape[1]
-        else:
-            defocus = None
-        return defocus
-
     # Initialize sinogram
     sinogram = initialise_sinogram(tomogram, sinogram_order)
 
@@ -101,17 +99,15 @@ def reconstruct(
     # Generate args for the algorithm.
     centre = get_centre(sinogram.shape, centre)
 
-    # Get the defocus
-    defocus = get_defocus(sinogram.shape, defocus)
-
     # Perform the reconstruction in multiple threads
     guanaco.detail.mp.reconstruction_dispatcher(
         sinogram,
         reconstruction,
         centre,
         angles,
-        defocus=defocus,
         pixel_size=pixel_size,
+        min_defocus=min_defocus,
+        max_defocus=max_defocus,
         device=device,
         ncore=ncore,
         nchunk=nchunk,
@@ -125,6 +121,7 @@ def reconstruct(
 def reconstruct_file(
     input_filename,
     output_filename,
+    centre=None,
     defocus=None,
     num_defocus=None,
     spherical_aberration=None,
@@ -194,9 +191,14 @@ def reconstruct_file(
             projections.shape[2],
         )
 
+        # Set the sinogram order.
         sinogram_order = False
 
-        defocus_array = None
+        # Get the rotation centre
+        centre = get_centre(projections.shape, centre, sinogram_order)
+
+        min_defocus = 0
+        max_defocus = 0
         intermediate_filename = "corrected.dat"
         if defocus is not None:
             if num_defocus == None:
@@ -204,7 +206,6 @@ def reconstruct_file(
                 defocus_array = numpy.array([defocus], dtype="float32")
             else:
                 shape = projections.shape
-                centre = numpy.ones(shape[1], dtype="float32") * (shape[2] / 2.0)
                 z0 = defocus - centre * pixel_size
                 z1 = defocus + centre * pixel_size
                 z2 = defocus - (shape[2] - centre) * pixel_size
@@ -259,9 +260,10 @@ def reconstruct_file(
                 projections,
                 angles,
                 reconstruction,
-                centre=None,
-                defocus=defocus_array,
+                centre=centre,
                 pixel_size=pixel_size,
+                min_defocus=min_defocus - defocus,
+                max_defocus=max_defocus - defocus,
                 sinogram_order=sinogram_order,
                 device=device,
                 ncore=ncore,
