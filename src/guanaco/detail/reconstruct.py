@@ -49,6 +49,7 @@ def reconstruct(
     min_defocus=0,
     max_defocus=0,
     sinogram_order=False,
+    transform=None,
     device="cpu",
     ncore=None,
     nchunk=None,
@@ -107,6 +108,7 @@ def reconstruct(
         pixel_size=pixel_size,
         min_defocus=min_defocus,
         max_defocus=max_defocus,
+        transform=transform,
         device=device,
         ncore=ncore,
         nchunk=nchunk,
@@ -295,10 +297,6 @@ def reconstruct_file(
             corrected_filename,
         )
 
-        # Transform the corrected projections
-        if transform == "minus":
-            projections = -projections
-
         # Open the output file
         print("Writing reconstruction to %s" % output_filename)
         with open_reconstruction_file(
@@ -318,6 +316,7 @@ def reconstruct_file(
                 min_defocus=min_defocus,
                 max_defocus=max_defocus,
                 sinogram_order=False,
+                transform=transform,
                 device=device,
                 ncore=ncore,
             )

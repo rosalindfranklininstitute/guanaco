@@ -255,7 +255,7 @@ namespace detail {
         const float c = g::angle_offset[angle];
         const float scale = g::angle_scale[angle];
 
-        // Compute the pixel coordinate
+        // Compute the pixel and defocus coordinate
         const float pixel = a * x + b * y + c;
         const float height = b * x - a * y;
         const float defocus = height * dscale + doffset;
@@ -445,8 +445,6 @@ void Reconstructor_t<e_device>::operator()(const float *sinogram,
   // angles and the pixel area
   auto sino_size = config_.sino_size();
   auto grid_size = config_.grid_size();
-  auto num_angles = config_.num_angles;
-  auto pixel_area = config_.pixel_area();
 
   // Allocate device vectors for sinogram and reconstruction
   auto sinogram_d = vector_type(sinogram, sinogram + sino_size);
@@ -477,8 +475,7 @@ void Reconstructor_t<e_device>::project(const float *sinogram,
   GUANACO_ASSERT(prop.maxTexture3D[2] >= config_.num_defocus);
 
   // Compute the scale
-  auto scale = M_PI / (2 * config_.num_angles * config_.pixel_area());
-  scale *= config_.pixel_size;  // ONLY VALID FOR SQUARE
+  auto scale = M_PI / (2 * config_.num_angles);
 
   // Initialise the back projector class
   auto bp = detail::BP(config_.num_pixels,

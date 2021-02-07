@@ -42,6 +42,7 @@ def reconstruction_dispatcher(
     pixel_size=1,
     min_defocus=0,
     max_defocus=0,
+    transform=None,
     device="cpu",
     ncore=None,
     nchunk=None,
@@ -77,6 +78,7 @@ def reconstruction_dispatcher(
                 pixel_size,
                 min_defocus,
                 max_defocus,
+                transform,
                 device,
                 None,
             )
@@ -92,6 +94,7 @@ def reconstruction_dispatcher(
                     pixel_size,
                     min_defocus,
                     max_defocus,
+                    transform,
                     device,
                     gpu,
                 )
@@ -105,6 +108,7 @@ def reconstruction_worker(
     pixel_size,
     min_defocus,
     max_defocus,
+    transform,
     device,
     gpu_index,
 ):
@@ -134,6 +138,10 @@ def reconstruction_worker(
                 sino[:, r:] = 0
         else:
             sino = sinogram[i]
+
+        # Transform the corrected projections
+        if transform == "minus":
+            sino = -sino
 
         print("Reconstructing slice %d/%d" % (i + 1, nslices))
         guanaco.detail.recon(
