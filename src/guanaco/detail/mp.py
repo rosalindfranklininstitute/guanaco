@@ -135,8 +135,9 @@ def reconstruction_worker(
         else:
             sino = sinogram[i]
 
+        print("Reconstructing slice %d/%d" % (i + 1, nslices))
         guanaco.detail.recon(
-            sino,
+            numpy.ascontiguousarray(sino),
             reconstruction[i],
             angles,
             centre[i],

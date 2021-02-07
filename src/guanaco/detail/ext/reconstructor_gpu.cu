@@ -105,7 +105,7 @@ Filter<e_device>::Filter(size_type num_pixels,
       num_angles_(num_angles),
       num_defocus_(num_defocus),
       filter_(create_filter(num_pixels_ + 1)),
-      fft_(num_pixels_ * 2, num_angles_ * num_defocus_) {
+      fft_(num_pixels_ * 2, num_angles_) {
   GUANACO_ASSERT(num_pixels_ > 0);
   GUANACO_ASSERT(num_angles_ > 0);
   GUANACO_ASSERT(num_defocus_ > 0);
@@ -142,45 +142,51 @@ void Filter<e_device>::operator()(float *data) const {
   auto filter_d = device_vector_c(filter_.size(), 0);
   thrust::copy(filter_.begin(), filter_.end(), filter_d.begin());
 
-  // Copy the rows of the sinogram to a zero padded array. When taking the FT
-  // of the data, we are going from real to complex so the output array only
-  // stores the non-redundant complex coefficients so the complex array
-  // requires (N/2 + 1) elements.
-  auto rows_c = device_vector_c(num_defocus_ * num_angles_ * filter_.size(), 0);
-  auto rows_f = device_vector_f(num_defocus_ * num_angles_ * num_pixels_ * 2, 0);
-  for (auto i = 0; i < num_defocus_ * num_angles_; ++i) {
-    thrust::copy(data + i * num_pixels_,
-                 data + i * num_pixels_ + num_pixels_,
-                 rows_f.begin() + i * num_pixels_ * 2);
-  }
+  // When taking the FT of the data, we are going from real to complex so the
+  // output array only stores the non-redundant complex coefficients so the
+  // complex array requires (N/2 + 1) elements.
+  for (auto j = 0; j < num_defocus_; ++j) {
+    auto rows_c = device_vector_c(num_angles_ * filter_.size(), 0);
+    auto rows_f = device_vector_f(num_angles_ * num_pixels_ * 2, 0);
 
-  // Take the FT of the rows of the data
-  fft_.forward(rows_f.data().get(), rows_c.data().get());
+    // Get a pointer to the sinogram
+    auto data_ptr = data + j * num_angles_*num_pixels_;
 
-  // Apply the filter to each projection
-  for (auto i = 0; i < num_defocus_ * num_angles_; ++i) {
-    thrust::transform(filter_d.begin(),
-                      filter_d.end(),
-                      rows_c.begin() + i * filter_.size(),
-                      rows_c.begin() + i * filter_.size(),
-                      thrust::multiplies<thrust::complex<float>>());
-  }
+    // Copy the rows of the sinogram to a zero padded array. 
+    for (auto i = 0; i < num_angles_; ++i) {
+      thrust::copy(data_ptr + i * num_pixels_,
+                   data_ptr + i * num_pixels_ + num_pixels_,
+                   rows_f.begin() + i * num_pixels_ * 2);
+    }
 
-  // Take the inverse FT of the rows of the data
-  fft_.inverse(rows_c.data().get(), rows_f.data().get());
+    // Take the FT of the rows of the data
+    fft_.forward(rows_f.data().get(), rows_c.data().get());
 
-  // Scale the filtered data
-  auto factor = num_pixels_ * 2;
-  thrust::transform(
-    rows_f.begin(), rows_f.end(), rows_f.begin(), [factor] __device__(auto x) {
-      return x / factor;
-    });
+    // Apply the filter to each projection
+    for (auto i = 0; i < num_angles_; ++i) {
+      thrust::transform(filter_d.begin(),
+                        filter_d.end(),
+                        rows_c.begin() + i * filter_.size(),
+                        rows_c.begin() + i * filter_.size(),
+                        thrust::multiplies<thrust::complex<float>>());
+    }
 
-  // Copy the filtered data back into the array
-  for (int i = 0; i < num_defocus_ * num_angles_; ++i) {
-    thrust::copy(rows_f.begin() + i * num_pixels_ * 2,
-                 rows_f.begin() + i * num_pixels_ * 2 + num_pixels_,
-                 data + i * num_pixels_);
+    // Take the inverse FT of the rows of the data
+    fft_.inverse(rows_c.data().get(), rows_f.data().get());
+
+    // Scale the filtered data
+    auto factor = num_pixels_ * 2;
+    thrust::transform(
+      rows_f.begin(), rows_f.end(), rows_f.begin(), [factor] __device__(auto x) {
+        return x / factor;
+      });
+
+    // Copy the filtered data back into the array
+    for (int i = 0; i < num_angles_; ++i) {
+      thrust::copy(rows_f.begin() + i * num_pixels_ * 2,
+                   rows_f.begin() + i * num_pixels_ * 2 + num_pixels_,
+                   data_ptr + i * num_pixels_);
+    }
   }
 }
 
@@ -251,7 +257,7 @@ namespace detail {
 
         // Compute the pixel coordinate
         const float pixel = a * x + b * y + c;
-        const float height = b * x + a * y;
+        const float height = b * x - a * y;
         const float defocus = height * dscale + doffset;
 
         // Sum the sinogram value for the pixel and angle

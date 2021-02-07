@@ -76,8 +76,7 @@ def reconstruct(
         tomogram = tomogram.astype(dtype="float32", copy=False)
         if not sinogram_order:
             tomogram = numpy.swapaxes(tomogram, 0, -2)  # doesn't copy data
-        # ensure contiguous
-        tomogram = numpy.require(tomogram, requirements="AC")
+        # tomogram = numpy.require(tomogram, requirements="AC")
         return tomogram
 
     def initialise_reconstruction(reconstruction, sinogram):
@@ -194,9 +193,9 @@ def get_corrected_projections(
             for d, ctf in enumerate(ctf_array):
                 print(
                     "Correcting image %d/%d with defocus %d/%d"
-                    % (z, projections.shape[0], d, len(ctf_array))
+                    % (z + 1, projections.shape[0], d + 1, len(ctf_array))
                 )
-                corrected_projections[z, d, :, :] = guanaco.correct(image, ctf)
+                corrected_projections[z, d, :, :] = -guanaco.correct(image, ctf)
 
         # Remove the dimension for corrections if only one correction
         if corrected_projections.shape[1] == 1:
@@ -243,7 +242,7 @@ def reconstruct_file(
         angles = numpy.zeros(infile.extended_header.shape[0], dtype=numpy.float32)
         for i in range(infile.extended_header.shape[0]):
             angles[i] = infile.extended_header[i]["Alpha tilt"] * pi / 180.0
-            print("Image %d; angle %.4f" % (i, angles[i]))
+            print("Image %d; angle %.4f" % (i + 1, angles[i]))
 
         # Return metadata
         return angles, voxel_size
