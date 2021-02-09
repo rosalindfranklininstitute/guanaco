@@ -18,16 +18,15 @@
  * You should have received a copy of the GNU General Public License
  * along with guanaco-ctf. If not, see <http:// www.gnu.org/licenses/>.
  */
+#include <iostream>
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
 #include <guanaco/guanaco.h>
 
 namespace py = pybind11;
 
-namespace guanaco {
+namespace guanaco { namespace python {
 
-  namespace python {
-    
   /**
    * Allow conversion from string to enum
    */
@@ -108,14 +107,12 @@ namespace guanaco {
     // Perform the reconstruction
     rec(sinogram.data(), reconstruction.mutable_data());
   }
- 
-  template <typename T>
-  void correct(
-      const py::array_t<T> &image,
-      const py::array_t<std::complex<T>> &ctf,
-      py::array_t<T> &rec,
-      eDevice device) {
 
+  template <typename T>
+  void correct(const py::array_t<T>& image,
+               const py::array_t<std::complex<T>>& ctf,
+               py::array_t<T>& rec,
+               eDevice device) {
     // Check the input
     GUANACO_ASSERT(image.ndim() == 2);
     GUANACO_ASSERT(ctf.ndim() == 2 || ctf.ndim() == 3);
@@ -130,18 +127,17 @@ namespace guanaco {
     GUANACO_ASSERT(num_ctf > 0);
     GUANACO_ASSERT(ysize > 0);
     GUANACO_ASSERT(xsize > 0);
-    GUANACO_ASSERT(ctf.shape()[ctf.ndim()-2] == ysize);
-    GUANACO_ASSERT(ctf.shape()[ctf.ndim()-1] == xsize);
-    GUANACO_ASSERT(rec.shape()[rec.ndim()-2] == ysize);
-    GUANACO_ASSERT(rec.shape()[rec.ndim()-1] == xsize);
-  
+    GUANACO_ASSERT(ctf.shape()[ctf.ndim() - 2] == ysize);
+    GUANACO_ASSERT(ctf.shape()[ctf.ndim() - 1] == xsize);
+    GUANACO_ASSERT(rec.shape()[rec.ndim() - 2] == ysize);
+    GUANACO_ASSERT(rec.shape()[rec.ndim() - 1] == xsize);
+
     // Call the function to CTF corret the data
-    correct(image.data(), ctf.data(), rec.mutable_data(), xsize, ysize, num_ctf, device);
+    correct(
+      image.data(), ctf.data(), rec.mutable_data(), xsize, ysize, num_ctf, device);
   }
 
-  }
-
-}  // namespace guanaco
+}}  // namespace guanaco::python
 
 PYBIND11_MODULE(guanaco_ext, m) {
   // Export the device enum
@@ -151,7 +147,7 @@ PYBIND11_MODULE(guanaco_ext, m) {
     .export_values();
 
   // Export the CTF correction function
-  m.def("corr", 
+  m.def("corr",
         &guanaco::python::correct<float>,
         py::arg("image"),
         py::arg("ctf"),

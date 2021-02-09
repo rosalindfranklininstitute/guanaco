@@ -48,4 +48,15 @@ public:
     throw guanaco::Error(__FILE__, __LINE__, "ASSERT (" #assertion ") failed"); \
   }
 
+/**
+ * Throw an error if the assertion fails
+ */
+#ifdef __CUDACC__
+#define GUANACO_ASSERT_CUDA(assertion)                                   \
+  if (!assertion) {                                                      \
+    auto error = cudaGetLastError();                                     \
+    throw guanaco::Error(__FILE__, __LINE__, cudaGetErrorString(error)); \
+  }
+#endif
+
 #endif

@@ -3,75 +3,7 @@
 
 namespace guanaco {
 
-Filter<e_host>::Filter(size_type num_pixels,
-                       size_type num_angles,
-                       size_type num_defocus)
-    : num_pixels_(num_pixels),
-      num_angles_(num_angles),
-      num_defocus_(num_defocus),
-      filter_(create_filter(num_pixels_ + 1)),
-      fft_(num_pixels_ * 2) {
-  GUANACO_ASSERT(num_pixels_ > 0);
-  GUANACO_ASSERT(num_angles_ > 0);
-}
-
-const std::vector<float> &Filter<e_host>::filter() const {
-  return filter_;
-}
-
-std::vector<float> Filter<e_host>::create_filter(size_type size) const {
-  GUANACO_ASSERT(size > 0);
-
-  // Initialise the filter array
-  auto filter = vector_type(size, 0);
-
-  // Create a Ramp filter
-  for (auto i = 0; i < size; i++) {
-    float w = float(i) / float(size - 1);
-    filter[i] = w;
-  }
-
-  // Return the filter
-  return filter;
-}
-
-void Filter<e_host>::operator()(float *data) const {
-  GUANACO_ASSERT(data != NULL);
-  GUANACO_ASSERT(filter_.size() == num_pixels_ + 1);
-
-  // Allocate a complex buffer for the row
-  auto row = complex_vector_type(num_pixels_ * 2);
-
-  // Loop through all the projection images
-  for (auto i = 0; i < num_defocus_ * num_angles_; ++i) {
-    // Get a row of data
-    float *data_row = data + i * num_pixels_;
-
-    // Copy the row into the zero padded array
-    std::copy(data_row, data_row + num_pixels_, row.begin());
-    std::fill(row.begin() + num_pixels_, row.end(), 0);
-
-    // Take the FT of the row
-    fft_.forward(reinterpret_cast<float *>(row.data()));
-
-    // Apply the filter
-    for (auto j = 0; j < filter_.size(); ++j) {
-      row[j] *= filter_[j];
-    }
-    for (auto j = filter_.size(); j < row.size(); ++j) {
-      row[j] *= filter_[row.size() - j];
-    }
-
-    // Take the inverse FT of the row
-    fft_.inverse(reinterpret_cast<float *>(row.data()));
-
-    // Copy the filtered data back
-    for (auto j = 0; j < num_pixels_; ++j) {
-      data_row[j] = row[j].real() / row.size();
-    }
-  }
-}
-
+template <>
 Reconstructor_t<e_host>::Reconstructor_t(const Config &config)
     : config_(config),
       filter_(config_.num_pixels, config_.num_angles, config_.num_defocus) {
@@ -79,36 +11,7 @@ Reconstructor_t<e_host>::Reconstructor_t(const Config &config)
   GUANACO_ASSERT(config_.is_valid());
 }
 
-void Reconstructor_t<e_host>::operator()(const float *sinogram,
-                                         float *reconstruction) const {
-  GUANACO_ASSERT(sinogram != nullptr);
-  GUANACO_ASSERT(reconstruction != nullptr);
-
-  // Get the sinogram and reconstruction sizes along with the number of
-  // angles and the pixel area
-  auto sino_size = config_.sino_size();
-  auto grid_size = config_.grid_size();
-  auto num_angles = config_.num_angles;
-  auto pixel_area = config_.pixel_area();
-
-  // Copy the sinogram before filtering
-  std::vector<float> filtered_sinogram(sinogram, sinogram + sino_size);
-
-  // Filter the sinogram
-  filter_(filtered_sinogram.data());
-
-  // Initialise the reconstruction to zero
-  std::fill(reconstruction, reconstruction + grid_size, 0);
-
-  // Perform the backprojection
-  project(filtered_sinogram.data(), reconstruction);
-
-  // Normalize the reconstruction
-  for (auto i = 0; i < grid_size; ++i) {
-    reconstruction[i] *= M_PI / (2 * num_angles * pixel_area);
-  }
-}
-
+template <>
 void Reconstructor_t<e_host>::project(const float *sinogram,
                                       float *reconstruction) const {
   // precomputations
@@ -127,7 +30,7 @@ void Reconstructor_t<e_host>::project(const float *sinogram,
   /* auto angle_scaled_cos = std::vector<float>(config_.num_angles); */
   /* auto angle_offset = std::vector<float>(config_.num_angles); */
   /* auto angle_scale = std::vector<float>(config_.num_angles); */
-  /* auto scale = M_PI / (2 * config_.num_angles * config_.pixel_area()); */
+  /* auto scale = M_PI / (2 * config_.num_angles); */
   /* scale *= config_.pixel_length_x();  // ONLY VALID FOR SQUARE */
 
   /* // Compute the quanities to store in the symbols */
@@ -307,6 +210,52 @@ void Reconstructor_t<e_host>::project(const float *sinogram,
         usize, vsize, ustride, vstride, v0, deltav, pixel * factor, reconstruction);
     }
   }
+}
+
+template <>
+void Reconstructor_t<e_host>::operator()(const float *sinogram,
+                                         float *reconstruction) const {
+  GUANACO_ASSERT(sinogram != nullptr);
+  GUANACO_ASSERT(reconstruction != nullptr);
+
+  // Get the sinogram and reconstruction sizes along with the number of
+  // angles and the pixel area
+  auto sino_size = config_.sino_size();
+  auto grid_size = config_.grid_size();
+  auto num_angles = config_.num_angles;
+
+  // Copy the sinogram before filtering
+  std::vector<float> filtered_sinogram(sinogram, sinogram + sino_size);
+
+  // Filter the sinogram
+  filter_(filtered_sinogram.data());
+
+  // Initialise the reconstruction to zero
+  std::fill(reconstruction, reconstruction + grid_size, 0);
+
+  // Perform the backprojection
+  project(filtered_sinogram.data(), reconstruction);
+
+  // Normalize the reconstruction
+  for (auto i = 0; i < grid_size; ++i) {
+    reconstruction[i] *= M_PI / (2 * num_angles);
+  }
+}
+
+Reconstructor::Reconstructor(const Config &config) : config_(config) {}
+
+void Reconstructor::operator()(const float *sinogram, float *reconstruction) const {
+  switch (config_.device) {
+  case e_device: {
+    auto alg = Reconstructor_t<e_device>(config_);
+    alg(sinogram, reconstruction);
+  } break;
+  case e_host:
+  default: {
+    auto alg = Reconstructor_t<e_host>(config_);
+    alg(sinogram, reconstruction);
+  } break;
+  };
 }
 
 }  // namespace guanaco

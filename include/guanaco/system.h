@@ -18,12 +18,13 @@
  * You should have received a copy of the GNU General Public License
  * along with guanaco-ctf. If not, see <http:// www.gnu.org/licenses/>.
  */
-#ifndef GUANACO_CONSTANTS_H
-#define GUANACO_CONSTANTS_H
+#ifndef GUANACO_SYSTEM_H
+#define GUANACO_SYSTEM_H
 
-namespace guanaco {
-
-enum eDevice { e_host = 0, e_device = 1 };
-}
+#ifdef __CUDACC__
+#define HOST_DEVICE __host__ __device__
+#else
+#define HOST_DEVICE
+#endif
 
 #endif

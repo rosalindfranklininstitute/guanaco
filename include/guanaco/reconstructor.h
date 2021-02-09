@@ -18,12 +18,44 @@
  * You should have received a copy of the GNU General Public License
  * along with guanaco-ctf. If not, see <http:// www.gnu.org/licenses/>.
  */
-#ifndef GUANACO_CONSTANTS_H
-#define GUANACO_CONSTANTS_H
+#ifndef GUANACO_RECONSTRUCTOR_H
+#define GUANACO_RECONSTRUCTOR_H
 
 namespace guanaco {
 
-enum eDevice { e_host = 0, e_device = 1 };
+template <eDevice device>
+class Reconstructor_t {
+public:
+  using size_type = std::size_t;
+  Reconstructor_t(const Config &config);
+
+  void operator()(const float *sinogram, float *reconstruction) const;
+
+protected:
+  void project(const float *sinogram, float *reconstruction) const;
+
+  Config config_;
+  Filter<device> filter_;
+};
+
+
+class Reconstructor {
+public:
+  using size_type = std::size_t;
+
+  Reconstructor(const Config &config);
+
+  void operator()(const float *sinogram, float *reconstruction) const;
+
+protected:
+  Config config_;
+};
+
+inline Reconstructor make_reconstructor(const Config &config) {
+  return Reconstructor(config);
+}
+
 }
 
 #endif
+

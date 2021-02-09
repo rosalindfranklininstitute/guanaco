@@ -18,18 +18,46 @@
  * You should have received a copy of the GNU General Public License
  * along with guanaco-ctf. If not, see <http:// www.gnu.org/licenses/>.
  */
-#ifndef GUANACO_H
-#define GUANACO_H
+#ifndef GUANACO_FFT_H
+#define GUANACO_FFT_H
 
-#include <complex>
-#include <cmath>
-#include <vector>
+#include <memory>
 #include <guanaco/constants.h>
-#include <guanaco/config.h>
-#include <guanaco/correct.h>
 #include <guanaco/error.h>
-#include <guanaco/fft.h>
-#include <guanaco/filter.h>
-#include <guanaco/reconstructor.h>
 
+namespace guanaco {
+
+template <eDevice device>
+class FFT {
+public:
+  using size_type = std::size_t;
+
+  FFT(size_type size);
+  FFT(size_type xsize, size_type ysize);
+  FFT(const FFT &);
+  FFT(FFT &&);
+  FFT &operator=(FFT &&);
+  FFT &operator=(const FFT &);
+  ~FFT();
+
+  void forward(void *in, void *out) const;
+  void inverse(void *in, void *out) const;
+  void forward(void *data) const;
+  void inverse(void *data) const;
+
+  static FFT<device> make_1d(size_type size, size_type nbatch = 1, bool real = false);
+
+  static FFT<device> make_2d(size_type xsize,
+                             size_type ysize,
+                             size_type nbatch = 1,
+                             bool real = false);
+
+protected:
+  FFT();
+
+  struct Impl;
+  std::unique_ptr<Impl> pimpl;
+};
+
+}  // namespace guanaco
 #endif

@@ -18,182 +18,12 @@
  * You should have received a copy of the GNU General Public License
  * along with guanaco-ctf. If not, see <http:// www.gnu.org/licenses/>.
  */
-#include <cuda.h>
-#include <cufft.h>
-
 #include <thrust/complex.h>
 #include <thrust/device_vector.h>
 
 #include <guanaco/guanaco.h>
 
-#define GUANACO_ASSERT_CUDA(assertion)                                   \
-  if (!assertion) {                                                      \
-    auto error = cudaGetLastError();                                     \
-    throw guanaco::Error(__FILE__, __LINE__, cudaGetErrorString(error)); \
-  }
-
 namespace guanaco {
-
-/* template <> */
-/* class FFT<e_device> { */
-/* public: */
-/*   using size_type = std::size_t; */
-
-/*   FFT(size_type size, size_type nbatch) : plan_forward_(0), plan_inverse_(0) { */
-/*     create_plan(size, nbatch); */
-/*   } */
-
-/*   ~FFT() { */
-/*     destroy_plan(); */
-/*   } */
-
-/*   void forward(void *in, void *out) const { */
-/*     auto i = reinterpret_cast<cufftReal *>(in); */
-/*     auto o = reinterpret_cast<cufftComplex *>(out); */
-/*     cufftExecR2C(plan_forward_, i, o); */
-/*   } */
-
-/*   void inverse(void *in, void *out) const { */
-/*     auto i = reinterpret_cast<cufftComplex *>(in); */
-/*     auto o = reinterpret_cast<cufftReal *>(out); */
-/*     cufftExecC2R(plan_inverse_, i, o); */
-/*   } */
-
-/* protected: */
-/*   void create_plan(size_type size, size_type nbatch) { */
-/*     cufftPlan1d(&plan_forward_, size, CUFFT_R2C, nbatch); */
-/*     cufftPlan1d(&plan_inverse_, size, CUFFT_C2R, nbatch); */
-/*   } */
-  
-/*   /1* void create_plan(size_type xsize, size_type ysize, size_type nbatch) { *1/ */
-/*   /1*   cufftPlan2d(&plan_forward_, ysize, xsize, CUFFT_R2C); *1/ */
-/*   /1*   cufftPlan2d(&plan_inverse_, ysize, xsize, CUFFT_C2R); *1/ */
-/*   /1* } *1/ */
-
-/*   void destroy_plan() { */
-/*     cudaDeviceSynchronize(); */
-/*     cufftDestroy(plan_forward_); */
-/*     cufftDestroy(plan_inverse_); */
-/*   } */
-
-/*   cufftHandle plan_forward_; */
-/*   cufftHandle plan_inverse_; */
-/* }; */
-
-template <>
-class Filter<e_device> {
-public:
-  using size_type = std::size_t;
-
-  using vector_type = std::vector<float>;
-
-  Filter(size_type num_pixels, size_type num_angles, size_type num_defocus);
-
-  void operator()(float *data) const;
-
-  const vector_type &filter() const;
-
-protected:
-  vector_type create_filter(size_type size) const;
-
-  size_type num_pixels_;
-  size_type num_angles_;
-  size_type num_defocus_;
-  vector_type filter_;
-  FFT<e_device> fft_;
-};
-
-Filter<e_device>::Filter(size_type num_pixels,
-                         size_type num_angles,
-                         size_type num_defocus)
-    : num_pixels_(num_pixels),
-      num_angles_(num_angles),
-      num_defocus_(num_defocus),
-      filter_(create_filter(num_pixels_ + 1)),
-      fft_(FFT<e_device>::make_1d_batch(num_pixels_ * 2, num_angles_)) {
-  GUANACO_ASSERT(num_pixels_ > 0);
-  GUANACO_ASSERT(num_angles_ > 0);
-  GUANACO_ASSERT(num_defocus_ > 0);
-}
-
-const Filter<e_device>::vector_type &Filter<e_device>::filter() const {
-  return filter_;
-}
-
-Filter<e_device>::vector_type Filter<e_device>::create_filter(size_type size) const {
-  GUANACO_ASSERT(size > 0);
-
-  // Initialise the filter array
-  auto filter = vector_type(size, 0);
-
-  // Create a Ramp filter
-  for (auto i = 0; i < size; ++i) {
-    float w = float(i) / float(size - 1);
-    filter[i] = w;
-  }
-
-  // Return the filter
-  return filter;
-}
-
-void Filter<e_device>::operator()(float *data) const {
-  GUANACO_ASSERT(filter_.size() == num_pixels_ + 1);
-
-  // Make some typedefs
-  using device_vector_f = thrust::device_vector<float>;
-  using device_vector_c = thrust::device_vector<thrust::complex<float>>;
-
-  // Copy the filter to the device
-  auto filter_d = device_vector_c(filter_.size(), 0);
-  thrust::copy(filter_.begin(), filter_.end(), filter_d.begin());
-
-  // When taking the FT of the data, we are going from real to complex so the
-  // output array only stores the non-redundant complex coefficients so the
-  // complex array requires (N/2 + 1) elements.
-  for (auto j = 0; j < num_defocus_; ++j) {
-    auto rows_c = device_vector_c(num_angles_ * filter_.size(), 0);
-    auto rows_f = device_vector_f(num_angles_ * num_pixels_ * 2, 0);
-
-    // Get a pointer to the sinogram
-    auto data_ptr = data + j * num_angles_*num_pixels_;
-
-    // Copy the rows of the sinogram to a zero padded array. 
-    for (auto i = 0; i < num_angles_; ++i) {
-      thrust::copy(data_ptr + i * num_pixels_,
-                   data_ptr + i * num_pixels_ + num_pixels_,
-                   rows_f.begin() + i * num_pixels_ * 2);
-    }
-
-    // Take the FT of the rows of the data
-    fft_.forward(rows_f.data().get(), rows_c.data().get());
-
-    // Apply the filter to each projection
-    for (auto i = 0; i < num_angles_; ++i) {
-      thrust::transform(filter_d.begin(),
-                        filter_d.end(),
-                        rows_c.begin() + i * filter_.size(),
-                        rows_c.begin() + i * filter_.size(),
-                        thrust::multiplies<thrust::complex<float>>());
-    }
-
-    // Take the inverse FT of the rows of the data
-    fft_.inverse(rows_c.data().get(), rows_f.data().get());
-
-    // Scale the filtered data
-    auto factor = num_pixels_ * 2;
-    thrust::transform(
-      rows_f.begin(), rows_f.end(), rows_f.begin(), [factor] __device__(auto x) {
-        return x / factor;
-      });
-
-    // Copy the filtered data back into the array
-    for (int i = 0; i < num_angles_; ++i) {
-      thrust::copy(rows_f.begin() + i * num_pixels_ * 2,
-                   rows_f.begin() + i * num_pixels_ * 2 + num_pixels_,
-                   data_ptr + i * num_pixels_);
-    }
-  }
-}
 
 namespace detail {
 
@@ -206,8 +36,8 @@ namespace detail {
 
     static texture_type sinogram;
 
-    __constant__ float angle_param_b[MAX_ANGLES];
-    __constant__ float angle_param_a[MAX_ANGLES];
+    __constant__ float angle_sin[MAX_ANGLES];
+    __constant__ float angle_cos[MAX_ANGLES];
     __constant__ float angle_offset[MAX_ANGLES];
     __constant__ float angle_scale[MAX_ANGLES];
 
@@ -219,7 +49,6 @@ namespace detail {
    * A functor that implements the back projection per voxel
    */
   struct BPFunction {
-
     size_t num_angles;
     size_t grid_width;
     size_t grid_height;
@@ -255,14 +84,14 @@ namespace detail {
       float value = 0.0f;
       for (size_t angle = 0; angle < num_angles; ++angle) {
         // Get parameters
-        const float a = g::angle_param_a[angle];
-        const float b = g::angle_param_b[angle];
-        const float c = g::angle_offset[angle];
+        const float cos_angle = g::angle_cos[angle];
+        const float sin_angle = g::angle_sin[angle];
+        const float offset = g::angle_offset[angle];
         const float scale = g::angle_scale[angle];
 
         // Compute the pixel and defocus coordinate
-        const float pixel = a * x + b * y + c;
-        const float height = b * x - a * y;
+        const float pixel = cos_angle * x - sin_angle * y + offset;
+        const float height = -sin_angle * x - cos_angle * y;
         const float defocus = height * dscale + doffset;
 
         // Sum the sinogram value for the pixel and angle
@@ -294,14 +123,13 @@ namespace detail {
        float max_defocus,
        const float *sinogram,
        const float *angles)
-        : sinogram_array_(nullptr), 
-          num_pixels_(num_pixels), 
-          num_angles_(num_angles), 
-          num_defocus_(num_defocus), 
-          pixel_size_(pixel_size), 
-          min_defocus_(min_defocus), 
+        : sinogram_array_(nullptr),
+          num_pixels_(num_pixels),
+          num_angles_(num_angles),
+          num_defocus_(num_defocus),
+          pixel_size_(pixel_size),
+          min_defocus_(min_defocus),
           max_defocus_(max_defocus) {
-
       // Check input
       GUANACO_ASSERT(num_pixels_ > 0);
       GUANACO_ASSERT(num_angles_ > 0);
@@ -332,8 +160,8 @@ namespace detail {
       };
 
       // Allocate host vectors
-      auto angle_param_b = thrust::host_vector<float>(num_angles);
-      auto angle_param_a = thrust::host_vector<float>(num_angles);
+      auto angle_sin = thrust::host_vector<float>(num_angles);
+      auto angle_cos = thrust::host_vector<float>(num_angles);
       auto angle_offset = thrust::host_vector<float>(num_angles);
       auto angle_scale = thrust::host_vector<float>(num_angles);
 
@@ -341,23 +169,23 @@ namespace detail {
       for (auto i = 0; i < num_angles; ++i) {
         // Get the ray vector and length of the ray vector
         auto angle = angles[i];
-        auto dir_x = std::cos(angle);
-        auto dir_y = std::sin(angle);
-        auto det_x0 = -centre * dir_x;
-        auto det_y0 = -centre * dir_y;
-        auto ray_length = 1.0;  // std::sqrt(dir_x * dir_x + (-dir_y) * (-dir_y));
-        auto d = 1.0;           // dir_x * dir_x - dir_y * (-dir_y);
+        auto cos_angle = std::cos(angle);
+        auto sin_angle = std::sin(angle);
+        auto det_x0 = -centre * cos_angle;
+        auto det_y0 = -centre * sin_angle;
+        auto ray_length = std::sqrt(cos_angle * cos_angle + sin_angle * sin_angle);
+        auto d = cos_angle * cos_angle + sin_angle * sin_angle;
 
         // Fill the arrays
-        angle_param_a[i] = dir_x / d;
-        angle_param_b[i] = (-dir_y) / d;
-        angle_offset[i] = (det_y0 * (-dir_y) - det_x0 * dir_x) / d;
+        angle_cos[i] = cos_angle / d;
+        angle_sin[i] = sin_angle / d;
+        angle_offset[i] = (det_y0 * (-sin_angle) - det_x0 * cos_angle) / d;
         angle_scale[i] = ray_length / std::abs(d);
       }
 
       // Copy the arrays to the symbols
-      copy(&g::angle_param_b, angle_param_b.data(), num_angles);
-      copy(&g::angle_param_a, angle_param_a.data(), num_angles);
+      copy(&g::angle_sin, angle_sin.data(), num_angles);
+      copy(&g::angle_cos, angle_cos.data(), num_angles);
       copy(&g::angle_offset, angle_offset.data(), num_angles);
       copy(&g::angle_scale, angle_scale.data(), num_angles);
     }
@@ -404,9 +232,9 @@ namespace detail {
       GUANACO_ASSERT(num_defocus_ == 1 || max_defocus_ > min_defocus_);
 
       // Compute the defocus scale and offset
-      auto dscale = num_defocus_ > 1 
-        ? num_defocus_ * pixel_size_ / (max_defocus_ - min_defocus_)
-        : 0;
+      auto dscale = num_defocus_ > 1
+                      ? num_defocus_ * pixel_size_ / (max_defocus_ - min_defocus_)
+                      : 0;
       auto doffset = -dscale * (min_defocus_ / pixel_size_);
 
       // Get some other quantities
@@ -424,15 +252,46 @@ namespace detail {
 
 }  // namespace detail
 
-Reconstructor_t<e_device>::Reconstructor_t(const Config &config) : config_(config) {
+template <>
+Reconstructor_t<e_device>::Reconstructor_t(const Config &config)
+    : config_(config),
+      filter_(config_.num_pixels, config_.num_angles, config_.num_defocus) {
   GUANACO_ASSERT(config_.device == e_device);
   GUANACO_ASSERT(config_.is_valid());
 }
 
+template <>
+void Reconstructor_t<e_device>::project(const float *sinogram,
+                                        float *reconstruction) const {
+  // Check the dimensions against the maximum texture size
+  cudaDeviceProp prop;
+  cudaGetDeviceProperties(&prop, 0);
+  GUANACO_ASSERT(prop.maxTexture3D[1] >= detail::g::MAX_ANGLES);
+  GUANACO_ASSERT(prop.maxTexture3D[0] >= config_.num_pixels);
+  GUANACO_ASSERT(prop.maxTexture3D[1] >= config_.num_angles);
+  GUANACO_ASSERT(prop.maxTexture3D[2] >= config_.num_defocus);
+
+  // Compute the scale
+  auto scale = M_PI / (2 * config_.num_angles);
+
+  // Initialise the back projector class
+  auto bp = detail::BP(config_.num_pixels,
+                       config_.num_angles,
+                       config_.num_defocus,
+                       config_.centre,
+                       config_.pixel_size,
+                       config_.min_defocus,
+                       config_.max_defocus,
+                       sinogram,
+                       config_.angles.data());
+
+  // Launch the back projector
+  bp.launch(reconstruction, config_.grid_width, config_.grid_height, scale);
+}
+
+template <>
 void Reconstructor_t<e_device>::operator()(const float *sinogram,
                                            float *reconstruction) const {
-  Filter<e_device> filter_(config_.num_pixels, config_.num_angles, config_.num_defocus);
-
   // A function to set the gpu index
   auto set_gpu_index = [](int index) {
     if (index >= 0) {
@@ -466,35 +325,6 @@ void Reconstructor_t<e_device>::operator()(const float *sinogram,
 
   // Copy the data back to the host ptr
   thrust::copy(reconstruction_d.begin(), reconstruction_d.end(), reconstruction);
-}
-
-void Reconstructor_t<e_device>::project(const float *sinogram,
-                                        float *reconstruction) const {
-
-  // Check the dimensions against the maximum texture size
-  cudaDeviceProp prop;
-  cudaGetDeviceProperties(&prop, 0);
-  GUANACO_ASSERT(prop.maxTexture3D[1] >= detail::g::MAX_ANGLES);
-  GUANACO_ASSERT(prop.maxTexture3D[0] >= config_.num_pixels);
-  GUANACO_ASSERT(prop.maxTexture3D[1] >= config_.num_angles);
-  GUANACO_ASSERT(prop.maxTexture3D[2] >= config_.num_defocus);
-
-  // Compute the scale
-  auto scale = M_PI / (2 * config_.num_angles);
-
-  // Initialise the back projector class
-  auto bp = detail::BP(config_.num_pixels,
-                       config_.num_angles,
-                       config_.num_defocus,
-                       config_.centre,
-                       config_.pixel_size,
-                       config_.min_defocus,
-                       config_.max_defocus,
-                       sinogram,
-                       config_.angles.data());
-
-  // Launch the back projector
-  bp.launch(reconstruction, config_.grid_width, config_.grid_height, scale);
 }
 
 }  // namespace guanaco

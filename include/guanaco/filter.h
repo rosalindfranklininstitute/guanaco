@@ -18,12 +18,44 @@
  * You should have received a copy of the GNU General Public License
  * along with guanaco-ctf. If not, see <http:// www.gnu.org/licenses/>.
  */
-#ifndef GUANACO_CONSTANTS_H
-#define GUANACO_CONSTANTS_H
+#ifndef GUANACO_FILTER_H
+#define GUANACO_FILTER_H
+
+#include <complex>
+#include <vector>
+#include <guanaco/constants.h>
+#include <guanaco/error.h>
+#include <guanaco/fft.h>
 
 namespace guanaco {
 
-enum eDevice { e_host = 0, e_device = 1 };
-}
+template <eDevice device>
+class Filter {
+public:
+  using size_type = std::size_t;
+
+  using vector_type = std::vector<float>;
+  using complex_vector_type = std::vector<std::complex<float>>;
+
+  Filter(size_type num_pixels, size_type num_angles, size_type num_defocus);
+
+  void operator()(float *data) const;
+
+  const vector_type &filter() const;
+
+protected:
+  
+  std::vector<float> create_filter(size_type size) const;
+
+  size_type num_pixels_;
+  size_type num_angles_;
+  size_type num_defocus_;
+  vector_type filter_;
+  FFT<device> fft_;
+};
+
+
+}  // namespace guanaco
 
 #endif
+

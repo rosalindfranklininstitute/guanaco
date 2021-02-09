@@ -28,10 +28,14 @@ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH True)
 
 # Add a C/C++ extension
 pybind11_add_module(guanaco_ext 
+  src/guanaco/detail/ext/correct.cpp
+  src/guanaco/detail/ext/correct.cu
   src/guanaco/detail/ext/fft.cpp
   src/guanaco/detail/ext/fft.cu
+  src/guanaco/detail/ext/filter.cpp
+  src/guanaco/detail/ext/filter.cu
   src/guanaco/detail/ext/reconstructor.cpp
-  src/guanaco/detail/ext/reconstructor_gpu.cu
+  src/guanaco/detail/ext/reconstructor.cu
   src/guanaco/detail/ext/guanaco_ext.cpp)
 
 set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --extended-lambda")
