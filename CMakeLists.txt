@@ -28,6 +28,8 @@ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH True)
 
 # Add a C/C++ extension
 pybind11_add_module(guanaco_ext 
+  src/guanaco/detail/ext/fft.cpp
+  src/guanaco/detail/ext/fft.cu
   src/guanaco/detail/ext/reconstructor.cpp
   src/guanaco/detail/ext/reconstructor_gpu.cu
   src/guanaco/detail/ext/guanaco_ext.cpp)

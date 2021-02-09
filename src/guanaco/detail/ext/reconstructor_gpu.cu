@@ -34,46 +34,51 @@
 
 namespace guanaco {
 
-template <>
-class FFT<e_device> {
-public:
-  using size_type = std::size_t;
+/* template <> */
+/* class FFT<e_device> { */
+/* public: */
+/*   using size_type = std::size_t; */
 
-  FFT(size_type size, size_type nbatch) : plan_forward_(0), plan_inverse_(0) {
-    create_plan(size, nbatch);
-  }
+/*   FFT(size_type size, size_type nbatch) : plan_forward_(0), plan_inverse_(0) { */
+/*     create_plan(size, nbatch); */
+/*   } */
 
-  ~FFT() {
-    destroy_plan();
-  }
+/*   ~FFT() { */
+/*     destroy_plan(); */
+/*   } */
 
-  void forward(void *in, void *out) const {
-    auto i = reinterpret_cast<cufftReal *>(in);
-    auto o = reinterpret_cast<cufftComplex *>(out);
-    cufftExecR2C(plan_forward_, i, o);
-  }
+/*   void forward(void *in, void *out) const { */
+/*     auto i = reinterpret_cast<cufftReal *>(in); */
+/*     auto o = reinterpret_cast<cufftComplex *>(out); */
+/*     cufftExecR2C(plan_forward_, i, o); */
+/*   } */
 
-  void inverse(void *in, void *out) const {
-    auto i = reinterpret_cast<cufftComplex *>(in);
-    auto o = reinterpret_cast<cufftReal *>(out);
-    cufftExecC2R(plan_inverse_, i, o);
-  }
+/*   void inverse(void *in, void *out) const { */
+/*     auto i = reinterpret_cast<cufftComplex *>(in); */
+/*     auto o = reinterpret_cast<cufftReal *>(out); */
+/*     cufftExecC2R(plan_inverse_, i, o); */
+/*   } */
 
-protected:
-  void create_plan(size_type size, size_type nbatch) {
-    cufftPlan1d(&plan_forward_, size, CUFFT_R2C, nbatch);
-    cufftPlan1d(&plan_inverse_, size, CUFFT_C2R, nbatch);
-  }
+/* protected: */
+/*   void create_plan(size_type size, size_type nbatch) { */
+/*     cufftPlan1d(&plan_forward_, size, CUFFT_R2C, nbatch); */
+/*     cufftPlan1d(&plan_inverse_, size, CUFFT_C2R, nbatch); */
+/*   } */
+  
+/*   /1* void create_plan(size_type xsize, size_type ysize, size_type nbatch) { *1/ */
+/*   /1*   cufftPlan2d(&plan_forward_, ysize, xsize, CUFFT_R2C); *1/ */
+/*   /1*   cufftPlan2d(&plan_inverse_, ysize, xsize, CUFFT_C2R); *1/ */
+/*   /1* } *1/ */
 
-  void destroy_plan() {
-    cudaDeviceSynchronize();
-    cufftDestroy(plan_forward_);
-    cufftDestroy(plan_inverse_);
-  }
+/*   void destroy_plan() { */
+/*     cudaDeviceSynchronize(); */
+/*     cufftDestroy(plan_forward_); */
+/*     cufftDestroy(plan_inverse_); */
+/*   } */
 
-  cufftHandle plan_forward_;
-  cufftHandle plan_inverse_;
-};
+/*   cufftHandle plan_forward_; */
+/*   cufftHandle plan_inverse_; */
+/* }; */
 
 template <>
 class Filter<e_device> {
@@ -105,7 +110,7 @@ Filter<e_device>::Filter(size_type num_pixels,
       num_angles_(num_angles),
       num_defocus_(num_defocus),
       filter_(create_filter(num_pixels_ + 1)),
-      fft_(num_pixels_ * 2, num_angles_) {
+      fft_(FFT<e_device>::make_1d_batch(num_pixels_ * 2, num_angles_)) {
   GUANACO_ASSERT(num_pixels_ > 0);
   GUANACO_ASSERT(num_angles_ > 0);
   GUANACO_ASSERT(num_defocus_ > 0);

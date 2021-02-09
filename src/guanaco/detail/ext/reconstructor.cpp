@@ -10,7 +10,7 @@ Filter<e_host>::Filter(size_type num_pixels,
       num_angles_(num_angles),
       num_defocus_(num_defocus),
       filter_(create_filter(num_pixels_ + 1)),
-      fft_(num_pixels_ * 2, 1) {
+      fft_(num_pixels_ * 2) {
   GUANACO_ASSERT(num_pixels_ > 0);
   GUANACO_ASSERT(num_angles_ > 0);
 }

@@ -128,6 +128,7 @@ def get_corrected_projections(
     num_defocus=None,
     spherical_aberration=None,
     intermediate_filename="GUANACO_CORRECTED.dat",
+    device="cpu",
 ):
     # Set the min and max defoci
     min_defocus = 0
@@ -169,7 +170,9 @@ def get_corrected_projections(
         )
 
         # Precompute the CTF for each defoci
-        ctf_array = []
+        ctf_array = numpy.zeros(
+            (num_defocus, corrected_shape[2], corrected_shape[3]), dtype="complex64"
+        )
         for d in range(num_defocus):
 
             # Get the defocus
@@ -177,27 +180,26 @@ def get_corrected_projections(
 
             # Generate the ctf
             print("Computing CTF for defocus = %.2f" % df)
-            ctf_array.append(
-                guanaco.ctf2d(
-                    corrected_shape[2:],
-                    pixel_size=pixel_size,
-                    energy=energy,
-                    defocus=df,
-                    spherical_aberration=spherical_aberration,
-                    centre=False,
-                )
+            ctf_array[d, :, :] = guanaco.ctf2d(
+                corrected_shape[2:],
+                pixel_size=pixel_size,
+                energy=energy,
+                defocus=df,
+                spherical_aberration=spherical_aberration,
+                centre=False,
             )
 
         # Loop through all the projections and defoci and perform the CTF
         # correction
         for z in range(projections.shape[0]):
             image = projections[z, :, :]
-            for d, ctf in enumerate(ctf_array):
-                print(
-                    "Correcting image %d/%d with defocus %d/%d"
-                    % (z + 1, projections.shape[0], d + 1, len(ctf_array))
-                )
-                corrected_projections[z, d, :, :] = -guanaco.correct(image, ctf)
+            print(
+                "Correcting image %d/%d with %d defoci"
+                % (z + 1, projections.shape[0], len(ctf_array))
+            )
+            guanaco.detail.corr(
+                image, ctf_array, corrected_projections[z, :, :, :], device
+            )
 
         # Remove the dimension for corrections if only one correction
         if corrected_projections.shape[1] == 1:
@@ -295,6 +297,7 @@ def reconstruct_file(
             num_defocus,
             spherical_aberration,
             corrected_filename,
+            device,
         )
 
         # Open the output file

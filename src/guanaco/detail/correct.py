@@ -21,39 +21,9 @@
 
 
 import numpy
+import guanaco
 
-__all__ = ["phase_flip", "correct", "correct_stack"]
-
-
-def phase_flip(x, h):
-    """
-    Perform the phase flipping
-
-    Args:
-        x (array): The input FFT data
-        h (array): The input ctf
-
-    Returns:
-        array: The FFT of the corrected data
-
-    """
-    return x * numpy.sign(numpy.imag(h))
-
-
-def correct(data, ctf):
-    """
-    Compute the CTF correction
-
-    Args:
-        data (array): The input data
-        ctf (array): The input ctf
-
-    Returns:
-        array: The output corrected data
-
-    """
-    assert data.shape == ctf.shape
-    return numpy.real(numpy.fft.ifft2(phase_flip(numpy.fft.fft2(data), ctf)))
+__all__ = ["correct_stack"]
 
 
 def correct_stack(data, ctf, corrected=None):
@@ -80,7 +50,8 @@ def correct_stack(data, ctf, corrected=None):
     # Apply the correction
     for i in range(data.shape[0]):
         logger.info("Appling CTF correction to image %d" % (i + 1))
-        corrected[i, :, :] = correct_image(data[i, :, :], ctf)
+        guanaco.detail.correct(data[i, :, :], ctf, corrected[i, :, :])
+        # corrected[i, :, :] = correct_image(data[i, :, :], ctf)
 
     # Return corrected
     return corrected

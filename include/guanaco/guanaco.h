@@ -21,12 +21,12 @@
 #include <complex>
 #include <cmath>
 #include <vector>
-#include <fftw3.h>
+#include <guanaco/constants.h>
 #include <guanaco/error.h>
+#include <guanaco/fft.h>
 
 namespace guanaco {
 
-enum eDevice { e_host = 0, e_device = 1 };
 
 struct Config {
   using size_type = std::size_t;
@@ -82,58 +82,6 @@ struct Config {
   }
 };
 
-template <eDevice device>
-class FFT;
-
-template <>
-class FFT<e_host> {
-public:
-  using size_type = std::size_t;
-
-  FFT(size_type size, size_type num_threads)
-      : plan_forward_(nullptr), plan_inverse_(nullptr) {
-    create_plan(size, num_threads);
-  }
-
-  ~FFT() {
-    destroy_plan();
-  }
-
-  void forward(float *data) const {
-    fftwf_complex *v = reinterpret_cast<fftwf_complex *>(data);
-    fftwf_execute_dft(plan_forward_, v, v);
-  }
-
-  void inverse(float *data) const {
-    fftwf_complex *v = reinterpret_cast<fftwf_complex *>(data);
-    fftwf_execute_dft(plan_inverse_, v, v);
-  }
-
-protected:
-  void create_plan(size_type size, size_type num_threads) {
-    fftwf_init_threads();
-    fftwf_plan_with_nthreads(num_threads);
-    auto data = (fftwf_complex *)fftw_malloc(sizeof(fftwf_complex) * size);
-    plan_forward_ = fftwf_plan_dft_1d(size, data, data, FFTW_FORWARD, FFTW_ESTIMATE);
-    plan_inverse_ = fftwf_plan_dft_1d(size, data, data, FFTW_BACKWARD, FFTW_ESTIMATE);
-    fftw_free(data);
-  }
-
-  void destroy_plan() {
-    if (plan_forward_ != nullptr) {
-      fftwf_destroy_plan(plan_forward_);
-      plan_forward_ = nullptr;
-    }
-    if (plan_inverse_ != nullptr) {
-      fftwf_destroy_plan(plan_inverse_);
-      plan_inverse_ = nullptr;
-    }
-    fftwf_cleanup_threads();
-  }
-
-  fftwf_plan plan_forward_;
-  fftwf_plan plan_inverse_;
-};
 
 template <eDevice device>
 class Filter;
@@ -219,6 +167,81 @@ protected:
 
 inline Reconstructor make_reconstructor(const Config &config) {
   return Reconstructor(config);
+}
+
+template <typename T> 
+int sign(T val) {
+  return (T(0) < val) - (val < T(0));
+}
+
+template <typename T>
+std::complex<T> phase_flip(std::complex<T> x, std::complex<T> h) {
+  return x * T(sign(h.imag()));
+}
+
+template <typename T, eDevice device>
+void correct_internal(
+    const T *image, 
+    const std::complex<T> *ctf, 
+    T *rec, 
+    std::size_t xsize,
+    std::size_t ysize,
+    std::size_t num_ctf = 1) {
+  GUANACO_ASSERT(xsize > 0);
+  GUANACO_ASSERT(ysize > 0);
+  GUANACO_ASSERT(num_ctf > 0);
+  
+  using complex_vector_type = std::vector<std::complex<float>>;
+     
+  // Initialise the FFT
+  auto fft = FFT<e_host>(xsize, ysize);
+
+  // Allocate a complex buffer for the row
+  auto row = complex_vector_type(xsize * ysize);
+
+  // Loop through all the projections and all the CTFs
+  for (auto j = 0; j < num_ctf; ++j) {
+
+    // Get the CTF and output arrays
+    auto c = ctf + j * ysize*xsize;
+    auto r = rec + j * ysize*xsize;
+
+    // Copy the row into the zero padded array
+    std::copy(image, image + ysize*xsize, row.begin());
+
+    // Perform the forward FT
+    fft.forward(reinterpret_cast<float *>(row.data()));
+
+    // Do the CTF correction
+    for (auto k = 0; k < ysize*xsize; ++k) {
+      row[k] = -phase_flip(row[k], c[k]);
+    }
+    
+    // Perform the inverse FT
+    fft.inverse(reinterpret_cast<float *>(row.data()));
+
+    // Copy the data to the output array
+    for (auto k = 0; k < ysize*xsize; ++k) {
+      r[k] = row[k].real();
+    }
+  }
+}
+
+template <typename T>
+void correct(
+    const T *image, 
+    const std::complex<T> *ctf, 
+    T *rec, 
+    std::size_t xsize,
+    std::size_t ysize,
+    std::size_t num_ctf = 1,
+    eDevice device = e_host) {
+  switch (e_host) {
+  case e_device:
+  case e_host:
+  default:
+    correct_internal<T, e_host>(image, ctf, rec, xsize, ysize, num_ctf);
+  };
 }
 
 }  // namespace guanaco
