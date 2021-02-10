@@ -29,18 +29,18 @@ namespace guanaco {
 struct Config {
   using size_type = std::size_t;
 
-  eDevice device;
-  int gpu_index;
-  size_type num_pixels;
-  size_type num_angles;
-  size_type num_defocus;
-  size_type grid_height;
-  size_type grid_width;
-  float pixel_size;
-  float centre;
-  std::vector<float> angles;
-  float min_defocus;
-  float max_defocus;
+  eDevice device;                 // Use device or host
+  int gpu_index;                  // Which GPU to use
+  size_type num_pixels;           // Number of pixels
+  size_type num_angles;           // Number of angles
+  size_type num_defocus;          // Number of defocus steps
+  size_type grid_height;          // The reconstruction grid height
+  size_type grid_width;           // The reconstruction grid width
+  float pixel_size;               // The size of the pixels (A)
+  float centre;                   // The centre of rotation
+  std::vector<float> angles;      // The list of angles (rad)
+  float min_defocus;              // The minimum defocus (A)
+  float max_defocus;              // The maximum defocus (A)
 
   Config()
       : device(e_host),

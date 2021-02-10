@@ -123,21 +123,21 @@ def reconstruction_worker(
 
     for i in range(nslices):
 
-        if device == "cpu":
-            sino = sinogram[i]
-            shft = int(numpy.round(ndet / 2.0 - centre[i]))
-            if not shft == 0:
-                sino = numpy.roll(sinogram[i], shft)
-                l = shft
-                r = ndet + shft
-                if l < 0:
-                    l = 0
-                if r > ndet:
-                    r = ndet
-                sino[:, :l] = 0
-                sino[:, r:] = 0
-        else:
-            sino = sinogram[i]
+        # if device == "cpu":
+        #     sino = sinogram[i]
+        #     shft = int(numpy.round(ndet / 2.0 - centre[i]))
+        #     if not shft == 0:
+        #         sino = numpy.roll(sinogram[i], shft)
+        #         l = shft
+        #         r = ndet + shft
+        #         if l < 0:
+        #             l = 0
+        #         if r > ndet:
+        #             r = ndet
+        #         sino[:, :l] = 0
+        #         sino[:, r:] = 0
+        # else:
+        sino = sinogram[i]
 
         # Transform the corrected projections
         if transform == "minus":
