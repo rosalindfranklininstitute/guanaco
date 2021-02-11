@@ -138,7 +138,7 @@ def get_corrected_projections(
     if defocus is not None:
 
         # Check the number of defoci
-        if num_defocus == None or num_defocus <= 0:
+        if num_defocus is None or num_defocus <= 0:
             num_defocus = 1
 
         # Get the min and max defoci and the step
