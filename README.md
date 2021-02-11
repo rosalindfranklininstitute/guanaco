@@ -13,6 +13,11 @@ To install from source, clone this repository and then do the following:
 git submodule update --init --recursive
 ```
 
+In order to build this package, the following dependencies are required:
+
+- The CUDA toolkit
+- FFTW
+
 ```sh
 pip install -r requirements.txt
 python setup.py install 
@@ -24,6 +29,26 @@ To run the tests, clone this repository and the do the following:
 
 ```sh
 python setup.py test
+```
+
+## Usage
+
+To do a tomographic reconstruction with no CTF correction do something do the following
+
+```sh
+guanaco -i images.mrc -o rec.mrc -d gpu
+```
+
+To correct all images with the same single defocus something do the following
+
+```sh
+guanaco -i images.mrc -o rec.mrc -d gpu --df=20000 --Cs=2.7
+```
+
+To correct all images with the same defocus range something do the following
+
+```sh
+guanaco -i images.mrc -o rec.mrc -d gpu --df=20000 --Cs=2.7 --ndf=10
 ```
 
 ## Issues
