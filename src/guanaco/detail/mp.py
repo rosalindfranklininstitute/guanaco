@@ -53,7 +53,7 @@ def reconstruction_dispatcher(
     nslices = sinogram.shape[0]
 
     # Set the number of cores in the case of GPU
-    if device == "gpu" and ncore == None:
+    if device == "gpu" and ncore is None:
         ncore = 1
 
     # Compute the number of cores
