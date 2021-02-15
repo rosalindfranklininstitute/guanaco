@@ -45,7 +45,9 @@ public:
   void forward(void *data) const;
   void inverse(void *data) const;
 
-  static FFT<device> make_1d(size_type size, size_type nbatch = 1, bool real = false);
+  static FFT<device> make_1d(size_type size,
+                             size_type nbatch = 1,
+                             bool real = false);
 
   static FFT<device> make_2d(size_type xsize,
                              size_type ysize,

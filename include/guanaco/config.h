@@ -29,18 +29,18 @@ namespace guanaco {
 struct Config {
   using size_type = std::size_t;
 
-  eDevice device;                 // Use device or host
-  int gpu_index;                  // Which GPU to use
-  size_type num_pixels;           // Number of pixels
-  size_type num_angles;           // Number of angles
-  size_type num_defocus;          // Number of defocus steps
-  size_type grid_height;          // The reconstruction grid height
-  size_type grid_width;           // The reconstruction grid width
-  float pixel_size;               // The size of the pixels (A)
-  float centre;                   // The centre of rotation
-  std::vector<float> angles;      // The list of angles (rad)
-  float min_defocus;              // The minimum defocus (A)
-  float max_defocus;              // The maximum defocus (A)
+  eDevice device;             // Use device or host
+  int gpu_index;              // Which GPU to use
+  size_type num_pixels;       // Number of pixels
+  size_type num_angles;       // Number of angles
+  size_type num_defocus;      // Number of defocus steps
+  size_type grid_height;      // The reconstruction grid height
+  size_type grid_width;       // The reconstruction grid width
+  float pixel_size;           // The size of the pixels (A)
+  float centre;               // The centre of rotation
+  std::vector<float> angles;  // The list of angles (rad)
+  float min_defocus;          // The minimum defocus (A)
+  float max_defocus;          // The maximum defocus (A)
 
   Config()
       : device(e_host),
@@ -64,18 +64,17 @@ struct Config {
   }
 
   bool is_valid() const {
-    return (device == e_host || device == e_device) 
-      && num_pixels > 0                 // 
-      && num_angles > 0                 //
-      && num_defocus > 0                //
-      && grid_height > 0                //
-      && grid_width > 0                 //
-      && pixel_size > 0                 //
-      && min_defocus <= max_defocus     //
-      && angles.size() == num_angles;   //
+    return (device == e_host || device == e_device) && num_pixels > 0  //
+           && num_angles > 0                                           //
+           && num_defocus > 0                                          //
+           && grid_height > 0                                          //
+           && grid_width > 0                                           //
+           && pixel_size > 0                                           //
+           && min_defocus <= max_defocus                               //
+           && angles.size() == num_angles;                             //
   }
 };
 
-}
+}  // namespace guanaco
 
 #endif

@@ -28,22 +28,21 @@
 namespace guanaco {
 
 template <typename T>
-HOST_DEVICE
-int sign(T val) {
+HOST_DEVICE constexpr int sign(T val) {
   return (T(0) < val) - (val < T(0));
 }
 
 template <typename ComplexType>
-HOST_DEVICE
-ComplexType phase_flip(const ComplexType &x, const ComplexType &h) {
+HOST_DEVICE constexpr ComplexType phase_flip(const ComplexType &x,
+                                             const ComplexType &h) {
   return -x * ComplexType(sign(h.imag()));
 }
-  
+
 namespace detail {
-  
+
   template <eDevice device, typename T>
   struct Corrector;
-  
+
   template <typename T>
   struct Corrector<e_host, T> {
     void correct(const T *image,
@@ -53,7 +52,7 @@ namespace detail {
                  std::size_t ysize,
                  std::size_t num_ctf = 1);
   };
-  
+
   template <typename T>
   struct Corrector<e_device, T> {
     void correct(const T *image,
@@ -64,18 +63,16 @@ namespace detail {
                  std::size_t num_ctf = 1);
   };
 
-
   template <eDevice device, typename T>
   void correct_internal(const T *image,
-                 const std::complex<T> *ctf,
-                 T *rec,
-                 std::size_t xsize,
-                 std::size_t ysize,
-                 std::size_t num_ctf = 1) {
+                        const std::complex<T> *ctf,
+                        T *rec,
+                        std::size_t xsize,
+                        std::size_t ysize,
+                        std::size_t num_ctf = 1) {
     Corrector<device, T>().correct(image, ctf, rec, xsize, ysize, num_ctf);
   }
-}
-
+}  // namespace detail
 
 template <typename T>
 void correct(const T *image,
@@ -87,15 +84,14 @@ void correct(const T *image,
              eDevice device = e_host) {
   switch (device) {
   case e_device:
-    detail::correct_internal<e_device, T>(image, ctf, rec, xsize, ysize, num_ctf);
+    detail::correct_internal<e_device, T>(
+      image, ctf, rec, xsize, ysize, num_ctf);
   case e_host:
   default:
     detail::correct_internal<e_host, T>(image, ctf, rec, xsize, ysize, num_ctf);
   };
 }
 
-}
+}  // namespace guanaco
 
 #endif
-
-

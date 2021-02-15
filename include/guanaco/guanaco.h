@@ -27,6 +27,7 @@
 #include <guanaco/constants.h>
 #include <guanaco/config.h>
 #include <guanaco/correct.h>
+#include <guanaco/ctf.h>
 #include <guanaco/error.h>
 #include <guanaco/fft.h>
 #include <guanaco/filter.h>
