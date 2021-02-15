@@ -22,23 +22,49 @@ add_subdirectory(pybind11)
 # clusters which may not allow export of LD_LIBRARY_PATH
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH True)
 
+# Set position independent code (-fPIC)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+# Enable LTO
+set(CMAKE_INTERPROCEDURAL_OPTIMIZATION True)
+
+# Allow Lambdas to be called from device
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --extended-lambda")
+
+##############################################################################
+# Build the guanaco library
+##############################################################################
+
+add_library(guanaco STATIC
+  src/libguanaco/correct.cpp
+  src/libguanaco/correct.cu
+  src/libguanaco/fft.cpp
+  src/libguanaco/fft.cu
+  src/libguanaco/filter.cpp
+  src/libguanaco/filter.cu
+  src/libguanaco/reconstructor.cpp
+  src/libguanaco/reconstructor.cu)
+
+# Not specifying CUDA architecture throws and error.
+# Setting this option does not pass arch flag to compiler
+set_property(TARGET guanaco PROPERTY CUDA_ARCHITECTURES OFF)
+
+# Ensure we are using C++11
+target_compile_features(guanaco PUBLIC cxx_std_14)
+
+# Enable LTO
+set_property(TARGET guanaco PROPERTY INTERPROCEDURAL_OPTIMIZATION True)
+
+# Set the include directory
+target_include_directories(guanaco PUBLIC include src ${FFTW_INCLUDES})
+
 ##############################################################################
 # Build the guanaco-ctf library
 ##############################################################################
 
 # Add a C/C++ extension
 pybind11_add_module(guanaco_ext 
-  src/guanaco/detail/ext/correct.cpp
-  src/guanaco/detail/ext/correct.cu
-  src/guanaco/detail/ext/fft.cpp
-  src/guanaco/detail/ext/fft.cu
-  src/guanaco/detail/ext/filter.cpp
-  src/guanaco/detail/ext/filter.cu
-  src/guanaco/detail/ext/reconstructor.cpp
-  src/guanaco/detail/ext/reconstructor.cu
   src/guanaco/detail/ext/guanaco_ext.cpp)
-
-set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --extended-lambda")
 
 # Not specifying CUDA architecture throws and error.
 # Setting this option does not pass arch flag to compiler
@@ -47,14 +73,13 @@ set_property(TARGET guanaco_ext PROPERTY CUDA_ARCHITECTURES OFF)
 # Ensure we are using C++11
 target_compile_features(guanaco_ext PUBLIC cxx_std_14)
 
-# Enable LTO
-set_property(TARGET guanaco_ext PROPERTY INTERPROCEDURAL_OPTIMIZATION True)
 
 # Set the include directory
-target_include_directories(guanaco_ext PUBLIC include src include/astra ${FFTW_INCLUDES})
+target_include_directories(guanaco_ext PUBLIC include src)
 
 # Set the link libraries
 target_link_libraries(guanaco_ext PUBLIC #guanaco
+  guanaco
   ${CUDA_LIBRARIES} 
   ${CUDA_CUFFT_LIBRARIES}
   ${FFTW_LIBRARIES})

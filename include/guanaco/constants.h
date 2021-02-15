@@ -26,21 +26,23 @@
 namespace guanaco {
 
 namespace constants {
-const double pi = M_PI;               // Pi
-const double c = 2.99792458e8;        // Speed of light (m/s)
-const double e = 1.602176634e-19;     // Elementary charge (C)
-const double m_e = 9.1093837015e-31;  // Electron mass (kg)
-const double h = 6.62607004e-34;      // Planck's constant (m^2 kg/s)
-}
+  const double pi = M_PI;               // Pi
+  const double c = 2.99792458e8;        // Speed of light (m/s)
+  const double e = 1.602176634e-19;     // Elementary charge (C)
+  const double m_e = 9.1093837015e-31;  // Electron mass (kg)
+  const double h = 6.62607004e-34;      // Planck's constant (m^2 kg/s)
+  const double m_to_A = 1e10;           // metres to Angstroms
+  const double A_to_m = 1e-10;          // Angstroms to metres
+}  // namespace constants
 
 /**
  * Which device to execute on
  */
-enum eDevice { 
+enum eDevice {
   e_host = 0,   // The CPU
   e_device = 1  // The GPU
 };
 
-}
+}  // namespace guanaco
 
 #endif

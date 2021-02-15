@@ -43,9 +43,10 @@ public:
 /**
  * Throw an error if the assertion fails
  */
-#define GUANACO_ASSERT(assertion)                                               \
-  if (!(assertion)) {                                                           \
-    throw guanaco::Error(__FILE__, __LINE__, "ASSERT (" #assertion ") failed"); \
+#define GUANACO_ASSERT(assertion)                            \
+  if (!(assertion)) {                                        \
+    throw guanaco::Error(                                    \
+      __FILE__, __LINE__, "ASSERT (" #assertion ") failed"); \
   }
 
 /**

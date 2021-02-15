@@ -44,7 +44,6 @@ public:
   const vector_type &filter() const;
 
 protected:
-  
   std::vector<float> create_filter(size_type size) const;
 
   size_type num_pixels_;
@@ -54,8 +53,6 @@ protected:
   FFT<device> fft_;
 };
 
-
 }  // namespace guanaco
 
 #endif
-

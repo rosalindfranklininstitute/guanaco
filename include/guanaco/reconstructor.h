@@ -38,7 +38,6 @@ protected:
   Filter<device> filter_;
 };
 
-
 class Reconstructor {
 public:
   using size_type = std::size_t;
@@ -55,7 +54,6 @@ inline Reconstructor make_reconstructor(const Config &config) {
   return Reconstructor(config);
 }
 
-}
+}  // namespace guanaco
 
 #endif
-

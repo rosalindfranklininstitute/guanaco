@@ -22,6 +22,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
 #include <guanaco/guanaco.h>
+#include <guanaco/detail/ext/ctf.h>
 
 namespace py = pybind11;
 
@@ -133,8 +134,13 @@ namespace guanaco { namespace python {
     GUANACO_ASSERT(rec.shape()[rec.ndim() - 1] == xsize);
 
     // Call the function to CTF corret the data
-    correct(
-      image.data(), ctf.data(), rec.mutable_data(), xsize, ysize, num_ctf, device);
+    correct(image.data(),
+            ctf.data(),
+            rec.mutable_data(),
+            xsize,
+            ysize,
+            num_ctf,
+            device);
   }
 
 }}  // namespace guanaco::python
@@ -166,4 +172,6 @@ PYBIND11_MODULE(guanaco_ext, m) {
         py::arg("max_defocus") = 0.0,
         py::arg("device") = guanaco::e_host,
         py::arg("gpu_index") = -1);
+
+  export_ctf(m);
 }
