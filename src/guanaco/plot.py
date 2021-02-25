@@ -153,6 +153,8 @@ def generate_ctf(
     image_size=None,
     pixel_size=1,
     defocus=0,
+    num_defocus=None,
+    step_defocus=None,
     spherical_aberration=2.7,
     astigmatism=0,
     astigmatism_angle=0,
@@ -210,30 +212,50 @@ def generate_ctf(
     # Check the defocus
     if defocus is None:
         defocus = 0
+    if num_defocus is None or num_defocus == 0:
+        num_defocus = 1
+    if step_defocus is None:
+        step_defocus = 0
 
     # Compute the wavelength
     wavelength = guanaco.detail.get_electron_wavelength(energy)
 
-    # Setup the CTF calculation
-    ctf_calculator = guanaco.detail.CTF(
-        l=wavelength,
-        df=defocus,
-        Cs=spherical_aberration,
-        Ca=astigmatism,
-        Pa=astigmatism_angle,
-        dd=defocus_spread,
-        theta_c=source_spread,
-        phi=phase_shift,
+    # Init output ctf file
+    handle = mrcfile.new_mmap(
+        filename,
+        shape=(num_defocus, image_size[0], image_size[1]),
+        mrc_mode=mrcfile.utils.mode_from_dtype(numpy.dtype(numpy.complex64)),
+        overwrite=True,
     )
 
-    # Evaluate the ctf
-    ctf = ctf_calculator.get_ctf(image_size[1], image_size[0], pixel_size)
-
-    # Recentre
-    if recentre:
-        ctf = numpy.fft.fftshift(ctf)
-
-    # Write out the image
-    handle = mrcfile.new(filename, overwrite=True)
-    handle.set_data(ctf.astype("complex64"))
+    # Set the voxel size
     handle.voxel_size = pixel_size
+
+    # Loop through the defoci
+    for i in range(num_defocus):
+
+        # Set the defocus
+        df = defocus + (i - 0.5 * (num_defocus - 1)) * step_defocus
+        print("Computing CTF for defocus = %d A" % df)
+
+        # Setup the CTF calculation
+        ctf_calculator = guanaco.detail.CTF(
+            l=wavelength,
+            df=df,
+            Cs=spherical_aberration,
+            Ca=astigmatism,
+            Pa=astigmatism_angle,
+            dd=defocus_spread,
+            theta_c=source_spread,
+            phi=phase_shift,
+        )
+
+        # Evaluate the ctf
+        ctf = ctf_calculator.get_ctf(image_size[1], image_size[0], pixel_size)
+
+        # Recentre
+        if recentre:
+            ctf = numpy.fft.fftshift(ctf)
+
+        # Set the CTF
+        handle.data[i, :, :] = ctf

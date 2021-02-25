@@ -47,15 +47,6 @@ def add_argument(parser, name):
                 help="The defocus at the rotation axis (A)",
             )
         ),
-        "spherical_aberration": lambda: (
-            parser.add_argument(
-                "--Cs",
-                dest="spherical_aberration",
-                default=0,
-                type=float,
-                help="The spherical aberration (mm)",
-            )
-        ),
         "num_defocus": lambda: (
             parser.add_argument(
                 "--ndf",
@@ -63,6 +54,24 @@ def add_argument(parser, name):
                 default=None,
                 type=int,
                 help="The number of defocus steps to use",
+            )
+        ),
+        "step_defocus": lambda: (
+            parser.add_argument(
+                "--sdf",
+                dest="step_defocus",
+                default=None,
+                type=int,
+                help="The defocus step to use",
+            )
+        ),
+        "spherical_aberration": lambda: (
+            parser.add_argument(
+                "--Cs",
+                dest="spherical_aberration",
+                default=0,
+                type=float,
+                help="The spherical aberration (mm)",
             )
         ),
         "astigmatism": lambda: (
@@ -383,6 +392,7 @@ def generate_ctf(args=None):
     add_argument(parser, "energy")
     add_argument(parser, "defocus")
     add_argument(parser, "num_defocus")
+    add_argument(parser, "step_defocus")
     add_argument(parser, "spherical_aberration")
     add_argument(parser, "astigmatism")
     add_argument(parser, "astigmatism_angle")
@@ -403,6 +413,8 @@ def generate_ctf(args=None):
         image_size=args.image_size,
         pixel_size=args.pixel_size,
         defocus=args.defocus,
+        num_defocus=args.num_defocus,
+        step_defocus=args.step_defocus,
         spherical_aberration=args.spherical_aberration,
         astigmatism=args.astigmatism,
         astigmatism_angle=args.astigmatism_angle,
