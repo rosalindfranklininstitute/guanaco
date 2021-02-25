@@ -48,7 +48,10 @@ struct FFT<e_device>::Impl {
     }
   }
 
-  void create_plan_2d(size_type xsize, size_type ysize, size_type nbatch, bool real_) {
+  void create_plan_2d(size_type xsize,
+                      size_type ysize,
+                      size_type nbatch,
+                      bool real_) {
     real = real_;
     if (real) {
       cufftPlan2d(&plan_forward, ysize, xsize, CUFFT_R2C);
@@ -96,7 +99,8 @@ template <>
 FFT<e_device>::FFT() : pimpl(std::make_unique<Impl>()) {}
 
 template <>
-FFT<e_device>::FFT(const FFT &other) : pimpl(std::make_unique<Impl>(*other.pimpl)) {}
+FFT<e_device>::FFT(const FFT &other)
+    : pimpl(std::make_unique<Impl>(*other.pimpl)) {}
 
 template <>
 FFT<e_device>::FFT(FFT &&other) = default;
@@ -119,7 +123,8 @@ FFT<e_device>::FFT(size_type size) : pimpl(std::make_unique<Impl>()) {
 }
 
 template <>
-FFT<e_device>::FFT(size_type xsize, size_type ysize) : pimpl(std::make_unique<Impl>()) {
+FFT<e_device>::FFT(size_type xsize, size_type ysize)
+    : pimpl(std::make_unique<Impl>()) {
   pimpl->create_plan_2d(xsize, ysize, 1, false);
 }
 
@@ -144,7 +149,9 @@ void FFT<e_device>::inverse(void *data) const {
 }
 
 template <>
-FFT<e_device> FFT<e_device>::make_1d(size_type size, size_type nbatch, bool real) {
+FFT<e_device> FFT<e_device>::make_1d(size_type size,
+                                     size_type nbatch,
+                                     bool real) {
   FFT<e_device> self;
   self.pimpl->create_plan_1d(size, nbatch, real);
   return self;

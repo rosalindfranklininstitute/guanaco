@@ -27,11 +27,11 @@ namespace guanaco {
 namespace detail {
   template <typename T>
   void Corrector<e_host, T>::correct(const T *image,
-                                  const std::complex<T> *ctf,
-                                  T *rec,
-                                  std::size_t xsize,
-                                  std::size_t ysize,
-                                  std::size_t num_ctf) {
+                                     const std::complex<T> *ctf,
+                                     T *rec,
+                                     std::size_t xsize,
+                                     std::size_t ysize,
+                                     std::size_t num_ctf) {
     GUANACO_ASSERT(xsize > 0);
     GUANACO_ASSERT(ysize > 0);
     GUANACO_ASSERT(num_ctf > 0);
@@ -71,7 +71,6 @@ namespace detail {
     }
   }
 }  // namespace detail
-
 
 // Explicitly instantiate template functions
 template class detail::Corrector<e_host, float>;

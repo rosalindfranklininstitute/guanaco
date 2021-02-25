@@ -48,138 +48,123 @@ namespace guanaco { namespace python {
     auto inv_ps = 1.0 / ps;
     for (auto j = 0; j < h; ++j) {
       for (auto i = 0; i < w; ++i) {
-        auto t = get_q(i, j, w, h, inv_ps);
-        *q_ptr++ = std::get<0>(t);
-        *a_ptr++ = std::get<1>(t);
+        auto t = get_r_and_theta(i, j, w, h, inv_ps);
+        *q_ptr++ = t.r;
+        *a_ptr++ = t.theta;
       }
     }
     return make_tuple(q, a);
   }
 
+  inline void CTF_init(CTF &c,
+                       double l,
+                       double df,
+                       double Cs,
+                       double Ca,
+                       double Pa,
+                       double dd,
+                       double theta_c,
+                       double phi) {
+    c.l = l;
+    c.df = df;
+    c.Cs = Cs;
+    c.Ca = Ca;
+    c.Pa = Pa;
+    c.dd = dd;
+    c.theta_c = theta_c;
+    c.phi = phi;
+  }
+
   template <typename T>
-  py::array_t<std::complex<T>> get_ctf_q(py::array_t<T> q,
-                                         T l,
-                                         T df,
-                                         T Cs,
-                                         T Ca,
-                                         T Pa,
-                                         T dd,
-                                         T theta_c,
-                                         T phi = 0) {
-    py::array_t<std::complex<T>> result(detail::get_shape(q));
-    get_ctf_n(q.data(),
-              result.mutable_data(),
-              q.size(),
-              l,
-              df,
-              Cs,
-              Ca,
-              Pa,
-              dd,
-              theta_c,
-              phi);
+  py::array_t<T> get_Es_q(const CTF &c, py::array_t<T> q) {
+    py::array_t<T> result(detail::get_shape(q));
+    get_Es_n(c, q.data(), result.mutable_data(), q.size());
     return result;
   }
 
   template <typename T>
-  py::array_t<std::complex<T>>
-  get_ctf_simple_q(py::array_t<T> q, T l, T df, T Cs, T Ca, T Pa, T phi = 0) {
+  py::array_t<T> get_Et_q(const CTF &c, py::array_t<T> q) {
+    py::array_t<T> result(detail::get_shape(q));
+    get_Et_n(c, q.data(), result.mutable_data(), q.size());
+    return result;
+  }
+
+  template <typename T>
+  py::array_t<std::complex<T>> get_ctf_q(const CTF &c,
+                                         py::array_t<T> q,
+                                         py::array_t<T> theta) {
+    py::array_t<std::complex<T>> result(detail::get_shape(q));
+    get_ctf_n(c, q.data(), theta.data(), result.mutable_data(), q.size());
+    return result;
+  }
+
+  template <typename T>
+  py::array_t<std::complex<T>> get_ctf_simple_q(const CTF &c,
+                                                py::array_t<T> q,
+                                                py::array_t<T> theta) {
     py::array_t<std::complex<T>> result(detail::get_shape(q));
     get_ctf_n_simple(
-      q.data(), result.mutable_data(), q.size(), l, df, Cs, Ca, Pa, phi);
+      c, q.data(), theta.data(), result.mutable_data(), q.size());
     return result;
   }
 
   template <typename T>
-  py::array_t<T> get_ctf_simple_real_q(py::array_t<T> q,
-                                       T l,
-                                       T df,
-                                       T Cs,
-                                       T Ca,
-                                       T Pa,
-                                       T phi = 0) {
+  py::array_t<T> get_ctf_simple_real_q(const CTF &c,
+                                       py::array_t<T> q,
+                                       py::array_t<T> theta) {
     py::array_t<T> result(detail::get_shape(q));
     get_ctf_n_simple_real(
-      q.data(), result.mutable_data(), q.size(), l, df, Cs, Ca, Pa, phi);
+      c, q.data(), theta.data(), result.mutable_data(), q.size());
     return result;
   }
 
   template <typename T>
-  py::array_t<T> get_ctf_simple_imag_q(py::array_t<T> q,
-                                       T l,
-                                       T df,
-                                       T Cs,
-                                       T Ca,
-                                       T Pa,
-                                       T phi = 0) {
+  py::array_t<T> get_ctf_simple_imag_q(const CTF &c,
+                                       py::array_t<T> q,
+                                       py::array_t<T> theta) {
     py::array_t<T> result(detail::get_shape(q));
     get_ctf_n_simple_imag(
-      q.data(), result.mutable_data(), q.size(), l, df, Cs, Ca, Pa, phi);
+      c, q.data(), theta.data(), result.mutable_data(), q.size());
     return result;
   }
 
   template <typename T>
-  py::array_t<std::complex<T>> get_ctf_wh(std::size_t w,
+  py::array_t<std::complex<T>> get_ctf_wh(const CTF &c,
+                                          std::size_t w,
                                           std::size_t h,
-                                          T ps,
-                                          T l,
-                                          T df,
-                                          T Cs,
-                                          T Ca,
-                                          T Pa,
-                                          T dd,
-                                          T theta_c,
-                                          T phi = 0) {
+                                          T ps) {
     py::array_t<std::complex<T>> result({h, w});
-    get_ctf_n(
-      result.mutable_data(), w, h, ps, l, df, Cs, Ca, Pa, dd, theta_c, phi);
+    get_ctf_n(c, result.mutable_data(), w, h, ps);
     return result;
   }
 
   template <typename T>
-  py::array_t<std::complex<T>> get_ctf_simple_wh(std::size_t w,
+  py::array_t<std::complex<T>> get_ctf_simple_wh(const CTF &c,
+                                                 std::size_t w,
                                                  std::size_t h,
-                                                 T ps,
-                                                 T l,
-                                                 T df,
-                                                 T Cs,
-                                                 T Ca,
-                                                 T Pa,
-                                                 T phi = 0) {
+                                                 T ps) {
     py::array_t<std::complex<T>> result({h, w});
-    get_ctf_n_simple(result.mutable_data(), w, h, ps, l, df, Cs, Ca, Pa, phi);
+    get_ctf_n_simple(c, result.mutable_data(), w, h, ps);
     return result;
   }
 
   template <typename T>
-  py::array_t<T> get_ctf_simple_real_wh(std::size_t w,
+  py::array_t<T> get_ctf_simple_real_wh(const CTF &c,
+                                        std::size_t w,
                                         std::size_t h,
-                                        T ps,
-                                        T l,
-                                        T df,
-                                        T Cs,
-                                        T Ca,
-                                        T Pa,
-                                        T phi = 0) {
+                                        T ps) {
     py::array_t<T> result({h, w});
-    get_ctf_n_simple_real(
-      result.mutable_data(), w, h, ps, l, df, Cs, Ca, Pa, phi);
+    get_ctf_n_simple_real(c, result.mutable_data(), w, h, ps);
     return result;
   }
 
   template <typename T>
-  py::array_t<T> get_ctf_simple_imag_wh(std::size_t w,
+  py::array_t<T> get_ctf_simple_imag_wh(const CTF &c,
+                                        std::size_t w,
                                         std::size_t h,
-                                        T ps,
-                                        T l,
-                                        T df,
-                                        T Cs,
-                                        T Ca,
-                                        T Pa,
-                                        T phi = 0) {
+                                        T ps) {
     py::array_t<T> result({h, w});
-    get_ctf_n_simple_imag(
-      result.mutable_data(), w, h, ps, l, df, Cs, Ca, Pa, phi);
+    get_ctf_n_simple_imag(c, result.mutable_data(), w, h, ps);
     return result;
   }
 
@@ -198,24 +183,6 @@ inline void export_ctf(py::module m) {
         py::arg("dEE"),
         py::arg("dII"),
         py::arg("dVV"));
-
-  // Export the function to compute the spatial coherence envelope
-  m.def("get_Es",
-        &guanaco::get_Es<double>,
-        py::arg("q"),
-        py::arg("l"),
-        py::arg("df"),
-        py::arg("Cs") = 0,
-        py::arg("dd") = 0,
-        py::arg("theta_c") = 0);
-
-  // Export the function to compute the temporal coherence envelope
-  m.def("get_Et",
-        &guanaco::get_Et<double>,
-        py::arg("q"),
-        py::arg("l"),
-        py::arg("dd") = 0,
-        py::arg("theta_c") = 0);
 
   // Convert spatial frequencies to dimensionless quantities
   m.def("q_to_Q",
@@ -245,122 +212,70 @@ inline void export_ctf(py::module m) {
         py::arg("l"),
         py::arg("Cs"));
 
-  // Get Chi
-  m.def("get_chi",
-        &guanaco::get_chi<double>,
-        py::arg("q"),
-        py::arg("l"),
-        py::arg("df"),
-        py::arg("Cs") = 0,
-        py::arg("Ca") = 0,
-        py::arg("Pa") = 0);
-
-  // Get CTF
-  m.def("get_ctf",
-        &guanaco::python::get_ctf_q<double>,
-        py::arg("q"),
-        py::arg("l"),
-        py::arg("df"),
-        py::arg("Cs"),
-        py::arg("Ca") = 0,
-        py::arg("Pa") = 0,
-        py::arg("dd") = 0,
-        py::arg("theta_c") = 0,
-        py::arg("phi") = 0);
-
-  // Get CTF
-  m.def("get_ctf_simple",
-        &guanaco::python::get_ctf_simple_q<double>,
-        py::arg("q"),
-        py::arg("l"),
-        py::arg("df"),
-        py::arg("Cs") = 0,
-        py::arg("Ca") = 0,
-        py::arg("Pa") = 0,
-        py::arg("phi") = 0);
-
-  // Get CTF
-  m.def("get_ctf_simple_real",
-        &guanaco::python::get_ctf_simple_real_q<double>,
-        py::arg("q"),
-        py::arg("l"),
-        py::arg("df"),
-        py::arg("Cs") = 0,
-        py::arg("Ca") = 0,
-        py::arg("Pa") = 0,
-        py::arg("phi") = 0);
-
-  // Get CTF
-  m.def("get_ctf_simple_imag",
-        &guanaco::python::get_ctf_simple_imag_q<double>,
-        py::arg("q"),
-        py::arg("l"),
-        py::arg("df"),
-        py::arg("Cs") = 0,
-        py::arg("Ca") = 0,
-        py::arg("Pa") = 0,
-        py::arg("phi") = 0);
-
-  // Get the spatial frequency and angle
   m.def("get_q_and_theta",
         &guanaco::python::get_q_and_theta<double>,
         py::arg("w"),
         py::arg("h"),
         py::arg("ps"));
 
-  // Get CTF
-  m.def("get_ctf",
-        &guanaco::python::get_ctf_wh<double>,
-        py::arg("w"),
-        py::arg("h"),
-        py::arg("ps"),
-        py::arg("l"),
-        py::arg("df"),
-        py::arg("Cs") = 0,
-        py::arg("Ca") = 0,
-        py::arg("Pa") = 0,
-        py::arg("dd") = 0,
-        py::arg("theta_c") = 0,
-        py::arg("phi") = 0);
-
-  // Get CTF
-  m.def("get_ctf_simple",
-        &guanaco::python::get_ctf_simple_wh<double>,
-        py::arg("w"),
-        py::arg("h"),
-        py::arg("ps"),
-        py::arg("l"),
-        py::arg("df"),
-        py::arg("Cs") = 0,
-        py::arg("Ca") = 0,
-        py::arg("Pa") = 0,
-        py::arg("phi") = 0);
-
-  // Get CTF
-  m.def("get_ctf_simple_real",
-        &guanaco::python::get_ctf_simple_real_wh<double>,
-        py::arg("w"),
-        py::arg("h"),
-        py::arg("ps"),
-        py::arg("l"),
-        py::arg("df"),
-        py::arg("Cs") = 0,
-        py::arg("Ca") = 0,
-        py::arg("Pa") = 0,
-        py::arg("phi") = 0);
-
-  // Get CTF
-  m.def("get_ctf_simple_imag",
-        &guanaco::python::get_ctf_simple_imag_wh<double>,
-        py::arg("w"),
-        py::arg("h"),
-        py::arg("ps"),
-        py::arg("l"),
-        py::arg("df"),
-        py::arg("Cs") = 0,
-        py::arg("Ca") = 0,
-        py::arg("Pa") = 0,
-        py::arg("phi") = 0);
+  // Export the CTF functions as a class
+  py::class_<guanaco::CTF>(m, "CTF")
+    .def("__init__",
+         &guanaco::python::CTF_init,
+         py::arg("l"),
+         py::arg("df") = 0,
+         py::arg("Cs") = 0,
+         py::arg("Ca") = 0,
+         py::arg("Pa") = 0,
+         py::arg("dd") = 0,
+         py::arg("theta_c") = 0,
+         py::arg("phi") = 0)
+    .def("get_chi", 
+         &guanaco::get_chi<double>, 
+         py::arg("q"), 
+         py::arg("theta"))
+    .def("get_Es", 
+         &guanaco::python::get_Es_q<double>, 
+         py::arg("q"))
+    .def("get_Et", 
+         &guanaco::python::get_Et_q<double>, 
+         py::arg("q"))
+    .def("get_ctf",
+         &guanaco::python::get_ctf_q<double>,
+         py::arg("q"),
+         py::arg("theta"))
+    .def("get_ctf_simple",
+         &guanaco::python::get_ctf_simple_q<double>,
+         py::arg("q"),
+         py::arg("theta"))
+    .def("get_ctf_simple_real",
+         &guanaco::python::get_ctf_simple_real_q<double>,
+         py::arg("q"),
+         py::arg("theta"))
+    .def("get_ctf_simple_imag",
+         &guanaco::python::get_ctf_simple_imag_q<double>,
+         py::arg("q"),
+         py::arg("theta"))
+    .def("get_ctf",
+         &guanaco::python::get_ctf_wh<double>,
+         py::arg("w"),
+         py::arg("h"),
+         py::arg("ps"))
+    .def("get_ctf_simple",
+         &guanaco::python::get_ctf_simple_wh<double>,
+         py::arg("w"),
+         py::arg("h"),
+         py::arg("ps"))
+    .def("get_ctf_simple_real",
+         &guanaco::python::get_ctf_simple_real_wh<double>,
+         py::arg("w"),
+         py::arg("h"),
+         py::arg("ps"))
+    .def("get_ctf_simple_imag",
+         &guanaco::python::get_ctf_simple_imag_wh<double>,
+         py::arg("w"),
+         py::arg("h"),
+         py::arg("ps"));
 }
 
 #endif

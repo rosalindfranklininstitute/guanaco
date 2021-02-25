@@ -24,15 +24,16 @@
 #include <guanaco/fft.h>
 #include <guanaco/correct.h>
 
-namespace guanaco { namespace detail {
+namespace guanaco {
+namespace detail {
 
   template <typename T>
-  void Corrector<e_device,T>::correct(const T *image,
-                                    const std::complex<T> *ctf,
-                                    T *rec,
-                                    std::size_t xsize,
-                                    std::size_t ysize,
-                                    std::size_t num_ctf) {
+  void Corrector<e_device, T>::correct(const T *image,
+                                       const std::complex<T> *ctf,
+                                       T *rec,
+                                       std::size_t xsize,
+                                       std::size_t ysize,
+                                       std::size_t num_ctf) {
     GUANACO_ASSERT(xsize > 0);
     GUANACO_ASSERT(ysize > 0);
     GUANACO_ASSERT(num_ctf > 0);
@@ -49,14 +50,14 @@ namespace guanaco { namespace detail {
     auto fft_d = complex_vector_type(size);
     auto ctf_d = complex_vector_type(size);
     auto rec_d = vector_type(size);
-      
+
     // Copy image to device
     thrust::copy(image, image + size, image_d.begin());
 
     // Loop through all the projections and all the CTFs
     for (auto j = 0; j < num_ctf; ++j) {
       // Copy the data into the device buffers
-      thrust::copy(ctf + j *size, ctf + (j+1)*size, ctf_d.begin());
+      thrust::copy(ctf + j * size, ctf + (j + 1) * size, ctf_d.begin());
       thrust::copy(image_d.begin(), image_d.end(), fft_d.begin());
 
       // Perform the forward FT
@@ -64,28 +65,26 @@ namespace guanaco { namespace detail {
 
       // Do the CTF correction
       thrust::transform(
-          fft_d.begin(),
-          fft_d.end(),
-          ctf_d.begin(),
-          fft_d.begin(),
-          []__device__(auto x, auto y) { return phase_flip(x, y); });
+        fft_d.begin(),
+        fft_d.end(),
+        ctf_d.begin(),
+        fft_d.begin(),
+        [] __device__(auto x, auto y) { return phase_flip(x, y); });
 
       // Perform the inverse FT
       fft.inverse(fft_d.data().get());
 
       // Get the real component
       thrust::transform(
-          fft_d.begin(),
-          fft_d.end(),
-          rec_d.begin(),
-          []__device__(auto x) { return x.real(); });
+        fft_d.begin(), fft_d.end(), rec_d.begin(), [] __device__(auto x) {
+          return x.real();
+        });
 
       // Copy the data to the output array
-      thrust::copy(rec_d.begin(), rec_d.end(), rec + j*size);
+      thrust::copy(rec_d.begin(), rec_d.end(), rec + j * size);
     }
-
   }
-}
+}  // namespace detail
 
 template class detail::Corrector<e_device, float>;
 

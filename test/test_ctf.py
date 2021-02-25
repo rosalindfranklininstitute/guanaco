@@ -348,22 +348,6 @@ def test_get_defocus_spread():
     assert dd1 == pytest.approx(dd2)
 
 
-def test_get_Es():
-    l = guanaco.detail.get_electron_wavelength(300000)
-    q = 10
-    Es1 = numpy.exp(guanaco.detail.get_Es(q, l, 20000, 2.7 * 1e7, 1, 1e-3))
-    Es2 = spatial_incoherence_envelope(q, 20000, 2.7 * 1e7, l, 1, 1e-3)
-    assert Es1 == pytest.approx(Es2)
-
-
-def test_get_Et():
-    l = guanaco.detail.get_electron_wavelength(300000)
-    q = 10
-    Et1 = numpy.exp(guanaco.detail.get_Et(q, l, 1, 1e-3))
-    Et2 = temporal_incoherence_envelope(q, l, 1, 1e-3)
-    assert Et1 == pytest.approx(Et2)
-
-
 def test_q_to_Q():
     l = guanaco.detail.get_electron_wavelength(300000)
     q1 = 10
@@ -384,10 +368,29 @@ def test_df_to_D():
     assert df1 == pytest.approx(df2)
 
 
+def test_get_Es():
+    l = guanaco.detail.get_electron_wavelength(300000)
+    q = 10
+    config = guanaco.detail.CTF(l, 20000, 2.7 * 1e7, 0, 0, 1, 1e-3, 0)
+    Es1 = config.get_Es([q])[0]
+    Es2 = spatial_incoherence_envelope(q, 20000, 2.7 * 1e7, l, 1, 1e-3)
+    assert Es1 == pytest.approx(Es2)
+
+
+def test_get_Et():
+    l = guanaco.detail.get_electron_wavelength(300000)
+    q = 10
+    config = guanaco.detail.CTF(l, 20000, 2.7 * 1e7, 0, 0, 1, 1e-3, 0)
+    Et1 = config.get_Et([q])[0]
+    Et2 = temporal_incoherence_envelope(q, l, 1, 1e-3)
+    assert Et1 == pytest.approx(Et2)
+
+
 def test_get_chi():
     l = guanaco.detail.get_electron_wavelength(300000)
     q = 10
-    chi1 = guanaco.detail.get_chi(q, l, 20000, 2.7 * 1e7, 0, 0)
+    config = guanaco.detail.CTF(l, 20000, 2.7 * 1e7, 0, 0, 0, 0, 0)
+    chi1 = config.get_chi(q, 0)
     chi2 = get_chi_py(q, 20000, 2.7 * 1e7, l)
     assert chi1 == pytest.approx(chi2)
 
@@ -415,7 +418,8 @@ def test_get_ctf():
     Cs = 2.7 * 1e7
     dd = 1
     theta_c = 0.1
-    ctf1 = guanaco.detail.get_ctf(w, h, ps, l, df, Cs, 0, 0, dd, theta_c / 1e3, 0.1)
+    config = guanaco.detail.CTF(l, df, Cs, 0, 0, dd, theta_c / 1e3, 0.1)
+    ctf1 = config.get_ctf(w, h, ps)
     ctf2 = ctf2d((h, w), ps, df, Cs / 1e7, l, 300, dd, theta_c, phase_shift=0.1)
     assert pytest.approx(numpy.abs(ctf1 - ctf2).max(), abs=1e-5) == 0
 
@@ -427,7 +431,8 @@ def test_get_ctf_simple():
     l = guanaco.detail.get_electron_wavelength(300000)
     df = 20000
     Cs = 2.7 * 1e7
-    ctf1 = guanaco.detail.get_ctf_simple(w, h, ps, l, df, Cs, 0, 0, 0.1)
+    config = guanaco.detail.CTF(l, df, Cs, 0, 0, 0, 0, 0.1)
+    ctf1 = config.get_ctf_simple(w, h, ps)
     ctf2 = ctf2d((h, w), ps, df, Cs / 1e7, l, 300, 0, 0, phase_shift=0.1)
     assert pytest.approx(numpy.abs(ctf1 - ctf2).max(), abs=1e-5) == 0
 
@@ -439,7 +444,8 @@ def test_get_ctf_simple_real():
     l = guanaco.detail.get_electron_wavelength(300000)
     df = 20000
     Cs = 2.7 * 1e7
-    ctf1 = guanaco.detail.get_ctf_simple_real(w, h, ps, l, df, Cs, 0, 0, 0.1)
+    config = guanaco.detail.CTF(l, df, Cs, 0, 0, 0, 0, 0.1)
+    ctf1 = config.get_ctf_simple_real(w, h, ps)
     ctf2 = numpy.real(ctf2d((h, w), ps, df, Cs / 1e7, l, 300, 0, 0, phase_shift=0.1))
     assert pytest.approx(numpy.abs(ctf1 - ctf2).max(), abs=1e-5) == 0
 
@@ -451,6 +457,7 @@ def test_get_ctf_simple_imag():
     l = guanaco.detail.get_electron_wavelength(300000)
     df = 20000
     Cs = 2.7 * 1e7
-    ctf1 = guanaco.detail.get_ctf_simple_imag(w, h, ps, l, df, Cs, 0, 0, 0.1)
+    config = guanaco.detail.CTF(l, df, Cs, 0, 0, 0, 0, 0.1)
+    ctf1 = config.get_ctf_simple_imag(w, h, ps)
     ctf2 = numpy.imag(ctf2d((h, w), ps, df, Cs / 1e7, l, 300, 0, 0, phase_shift=0.1))
     assert pytest.approx(numpy.abs(ctf1 - ctf2).max(), abs=1e-5) == 0

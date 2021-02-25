@@ -20,7 +20,13 @@ def main():
         setup_requires=["pytest-runner"],
         tests_require=tests_require,
         test_suite="test",
-        entry_points={"console_scripts": ["guanaco=guanaco.command_line:main"]},
+        entry_points={
+            "console_scripts": [
+                "guanaco=guanaco.command_line:main",
+                "guanaco.plot_ctf=guanaco.command_line:plot_ctf",
+                "guanaco.generate_ctf=guanaco.command_line:generate_ctf",
+            ]
+        },
         extras_require={
             "build_sphinx": ["sphinx", "sphinx_rtd_theme"],
             "test": tests_require,

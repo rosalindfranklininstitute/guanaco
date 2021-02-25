@@ -24,7 +24,7 @@ void Reconstructor_t<e_host>::project(const float *sinogram,
   auto pixel_size = config_.pixel_size;
   auto centre = config_.centre;
   auto output_scale = M_PI / (2 * config_.num_angles);
-      
+
   // Compute the defocus scale and offset
   auto dscale = num_defocus > 1
                   ? num_defocus * pixel_size / (max_defocus - min_defocus)
@@ -33,7 +33,6 @@ void Reconstructor_t<e_host>::project(const float *sinogram,
 
   // Loop through projections
   for (auto angle = 0; angle < config_.num_angles; ++angle) {
-
     auto theta = config_.angles[angle];
     auto cos_angle = std::cos(theta);
     auto sin_angle = std::sin(theta);
@@ -53,7 +52,6 @@ void Reconstructor_t<e_host>::project(const float *sinogram,
     // Loop through all grid pixels
     for (int j = 0; j < grid_height; ++j) {
       for (int i = 0; i < grid_width; ++i) {
-
         auto row = row_angle;
 
         // Compute the x and y coordinates
@@ -66,28 +64,27 @@ void Reconstructor_t<e_host>::project(const float *sinogram,
 
         // Add the defocus offset
         if (num_defocus > 1) {
-          float height = - x * sin_angle - y * cos_angle; 
+          float height = -x * sin_angle - y * cos_angle;
           float defocus = height * dscale * doffset;
-          int defocus_index = (int)std::floor(defocus+0.5);
+          int defocus_index = (int)std::floor(defocus + 0.5);
           if (defocus_index < 0) defocus_index = 0;
-          if (defocus_index > num_defocus-1) defocus_index = num_defocus-1;
-          row += defocus_index * num_pixels*num_angles;
+          if (defocus_index > num_defocus - 1) defocus_index = num_defocus - 1;
+          row += defocus_index * num_pixels * num_angles;
         }
 
         // Interpolate the pixel
         pixel -= 0.5;
         int ind = (int)std::floor(pixel);
         float t = pixel - ind;
-        if (ind >= 0 && ind < num_pixels-1) {
+        if (ind >= 0 && ind < num_pixels - 1) {
           int i0 = ind;
           int i1 = i0 + 1;
           float v0 = row[i0];
           float v1 = row[i1];
-          float value = (1 - t)*v0 + t*v1;
-          reconstruction[index] += scale*value;
+          float value = (1 - t) * v0 + t * v1;
+          reconstruction[index] += scale * value;
         }
       }
-
     }
   }
 }
@@ -119,7 +116,8 @@ void Reconstructor_t<e_host>::operator()(const float *sinogram,
 
 Reconstructor::Reconstructor(const Config &config) : config_(config) {}
 
-void Reconstructor::operator()(const float *sinogram, float *reconstruction) const {
+void Reconstructor::operator()(const float *sinogram,
+                               float *reconstruction) const {
   switch (config_.device) {
   case e_device: {
     auto alg = Reconstructor_t<e_device>(config_);
