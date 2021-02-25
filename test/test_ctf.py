@@ -372,7 +372,7 @@ def test_get_Es():
     l = guanaco.detail.get_electron_wavelength(300000)
     q = 10
     config = guanaco.detail.CTF(l, 20000, 2.7 * 1e7, 0, 0, 1, 1e-3, 0)
-    Es1 = config.get_Es([q])[0]
+    Es1 = config.get_Es([q], [0])[0]
     Es2 = spatial_incoherence_envelope(q, 20000, 2.7 * 1e7, l, 1, 1e-3)
     assert Es1 == pytest.approx(Es2)
 

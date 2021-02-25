@@ -76,9 +76,9 @@ namespace guanaco { namespace python {
   }
 
   template <typename T>
-  py::array_t<T> get_Es_q(const CTF &c, py::array_t<T> q) {
+  py::array_t<T> get_Es_q(const CTF &c, py::array_t<T> q, py::array_t<T> theta) {
     py::array_t<T> result(detail::get_shape(q));
-    get_Es_n(c, q.data(), result.mutable_data(), q.size());
+    get_Es_n(c, q.data(), theta.data(), result.mutable_data(), q.size());
     return result;
   }
 
@@ -236,7 +236,8 @@ inline void export_ctf(py::module m) {
          py::arg("theta"))
     .def("get_Es", 
          &guanaco::python::get_Es_q<double>, 
-         py::arg("q"))
+         py::arg("q"),
+         py::arg("theta"))
     .def("get_Et", 
          &guanaco::python::get_Et_q<double>, 
          py::arg("q"))

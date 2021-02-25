@@ -128,7 +128,7 @@ def plot_ctf(
     if envelope:
 
         # Compute the spatial incoherence envelope
-        Es = ctf_calculator.get_Es(q)
+        Es = ctf_calculator.get_Es(q, theta)
 
         # Compute the temporal incoherence envelope
         Et = ctf_calculator.get_Et(q)

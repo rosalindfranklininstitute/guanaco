@@ -24,6 +24,7 @@ import mrcfile
 import numpy
 import time
 from math import pi
+import guanaco.detail
 import guanaco.detail.mp
 
 __all__ = ["reconstruct_file", "reconstruct"]
@@ -38,6 +39,29 @@ def get_centre(shape, centre, sinogram_order=True):
     elif numpy.array(centre).size == 1:
         centre = numpy.ones(shape[0], dtype="float32") * centre
     return centre.astype(dtype="float32", copy=False)
+
+
+def get_ctf(shape, pixel_size, energy, defocus, spherical_aberration):
+    """
+    Get the CTF
+
+    Params:
+        shape (tuple): The image size
+        pixel_size (float): The pixel size
+        energy (float): The electron energy (keV)
+        defocus (float): The defocus (A)
+        spherical_aberration (float): The spherical aberration (mm)
+
+    Returns:
+        array: The CTF image
+
+    """
+    ctf_calculator = guanaco.detail.CTF(
+        l=guanaco.detail.get_electron_wavelength(energy * 1000),
+        df=defocus,
+        Cs=spherical_aberration * 1e7,
+    )
+    return ctf_calculator.get_ctf_simple(shape[1], shape[0], pixel_size)
 
 
 def reconstruct(
@@ -180,13 +204,8 @@ def get_corrected_projections(
 
             # Generate the ctf
             print("Computing CTF for defocus = %.2f" % df)
-            ctf_array[d, :, :] = guanaco.ctf2d(
-                corrected_shape[2:],
-                pixel_size=pixel_size,
-                energy=energy,
-                defocus=df,
-                spherical_aberration=spherical_aberration,
-                centre=False,
+            ctf_array[d, :, :] = get_ctf(
+                corrected_shape[2:], pixel_size, energy, df, spherical_aberration
             )
 
         # Loop through all the projections and defoci and perform the CTF

@@ -182,13 +182,15 @@ struct CTF {
  *
  * @param c: The CTF parameters
  * @param q: The spatial frequency to evaluate the CTF (1/A)
+ * @param theta: The polar angle
  * @returns: The spatial incoherence envelope evaluated at q
  */
 template <typename T>
-HOST_DEVICE constexpr T get_log_Es(const CTF &c, T q) {
+HOST_DEVICE constexpr T get_log_Es(const CTF &c, T q, T theta) {
   using constants::pi;
+  auto df = c.df + c.Ca * std::cos(2 * (theta - c.Pa));
   auto u = 1 + 2 * pi * pi * c.theta_c * c.theta_c * c.dd * c.dd * q * q;
-  auto v = c.Cs * c.l * c.l * c.l * q * q * q + c.df * c.l * q;
+  auto v = c.Cs * c.l * c.l * c.l * q * q * q + df * c.l * q;
   return -(pi * pi * c.theta_c * c.theta_c * v * v / (c.l * c.l * u));
 }
 
@@ -249,7 +251,7 @@ template <typename T, typename U = std::complex<T>>
 HOST_DEVICE constexpr U get_ctf(const CTF &c, T q, T theta) {
   auto chi = get_chi(c, q, theta);
   auto log_Et = get_log_Et(c, q);
-  auto log_Es = get_log_Es(c, q);
+  auto log_Es = get_log_Es(c, q, theta);
   auto A = get_A(c, q);
   return A * std::exp(U((log_Es + log_Et), -(chi - c.phi)));
 }
@@ -305,12 +307,15 @@ HOST_DEVICE constexpr T get_ctf_simple_imag(const CTF &c, T q, T theta) {
  *
  * @param c: The CTF parameters
  * @param q: The array of spatial frequencies to evaluate the CTF (1/A)
+ * @param theta: The polar angle
  * @param Es: The spatial incoherence envelope evaluated at q
  * @param n: The number of array elements
  */
 template <typename T>
-void get_Es_n(const CTF &c, const T *q, T *Es, std::size_t n) {
-  std::transform(q, q + n, Es, [c](auto q) { return std::exp(get_log_Es(c, q)); });
+void get_Es_n(const CTF &c, const T *q, const T *theta, T *Es, std::size_t n) {
+  std::transform(q, q + n, theta, Es, [c](auto q, auto theta) { 
+      return std::exp(get_log_Es(c, q, theta)); 
+  });
 }
 
 /**
