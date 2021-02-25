@@ -41,7 +41,15 @@ def get_centre(shape, centre, sinogram_order=True):
     return centre.astype(dtype="float32", copy=False)
 
 
-def get_ctf(shape, pixel_size, energy, defocus, spherical_aberration):
+def get_ctf(
+    shape,
+    pixel_size,
+    energy,
+    defocus,
+    spherical_aberration,
+    astigmatism=None,
+    astigmatism_angle=None,
+):
     """
     Get the CTF
 
@@ -51,6 +59,8 @@ def get_ctf(shape, pixel_size, energy, defocus, spherical_aberration):
         energy (float): The electron energy (keV)
         defocus (float): The defocus (A)
         spherical_aberration (float): The spherical aberration (mm)
+        astigmatism (float): The 2-fold astigmatism (A)
+        astigmatism_angle (float): The angle for 2-fold astigmatism (deg)
 
     Returns:
         array: The CTF image
@@ -60,6 +70,8 @@ def get_ctf(shape, pixel_size, energy, defocus, spherical_aberration):
         l=guanaco.detail.get_electron_wavelength(energy * 1000),
         df=defocus,
         Cs=spherical_aberration * 1e7,
+        Ca=astigmatism,
+        Pa=astigmatism_angle * pi / 180,
     )
     return ctf_calculator.get_ctf_simple(shape[1], shape[0], pixel_size)
 
@@ -101,7 +113,6 @@ def reconstruct(
         tomogram = tomogram.astype(dtype="float32", copy=False)
         if not sinogram_order:
             tomogram = numpy.swapaxes(tomogram, 0, -2)  # doesn't copy data
-        # tomogram = numpy.require(tomogram, requirements="AC")
         return tomogram
 
     def initialise_reconstruction(reconstruction, sinogram):
@@ -151,6 +162,8 @@ def get_corrected_projections(
     defocus=None,
     num_defocus=None,
     spherical_aberration=None,
+    astigmatism=None,
+    astigmatism_angle=None,
     intermediate_filename="GUANACO_CORRECTED.dat",
     device="cpu",
 ):
@@ -205,7 +218,13 @@ def get_corrected_projections(
             # Generate the ctf
             print("Computing CTF for defocus = %.2f" % df)
             ctf_array[d, :, :] = get_ctf(
-                corrected_shape[2:], pixel_size, energy, df, spherical_aberration
+                corrected_shape[2:],
+                pixel_size,
+                energy,
+                df,
+                spherical_aberration,
+                astigmatism,
+                astigmatism_angle,
             )
 
         # Loop through all the projections and defoci and perform the CTF
@@ -243,6 +262,8 @@ def reconstruct_file(
     defocus=None,
     num_defocus=None,
     spherical_aberration=None,
+    astigmatism=None,
+    astigmatism_angle=None,
     device="cpu",
     ncore=None,
     transform=None,
@@ -315,6 +336,8 @@ def reconstruct_file(
             defocus,
             num_defocus,
             spherical_aberration,
+            astigmatism,
+            astigmatism_angle,
             corrected_filename,
             device,
         )

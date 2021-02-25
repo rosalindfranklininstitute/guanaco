@@ -229,8 +229,8 @@ def main(args=None):
     # Add some common arguments
     add_argument(parser, "energy")
     add_argument(parser, "defocus")
-    add_argument(parser, "spherical_aberration")
     add_argument(parser, "num_defocus")
+    add_argument(parser, "spherical_aberration")
     add_argument(parser, "astigmatism")
     add_argument(parser, "astigmatism_angle")
     add_argument(parser, "phase_shift")
@@ -248,6 +248,8 @@ def main(args=None):
         defocus=args.defocus,
         num_defocus=args.num_defocus,
         spherical_aberration=args.spherical_aberration,
+        astigmatism=args.astigmatism,
+        astigmatism_angle=args.astigmatism_angle,
         device=args.device,
         ncore=args.ncore,
         transform=args.transform,
@@ -300,7 +302,6 @@ def plot_ctf(args=None):
     add_argument(parser, "energy")
     add_argument(parser, "defocus")
     add_argument(parser, "spherical_aberration")
-    add_argument(parser, "num_defocus")
     add_argument(parser, "astigmatism")
     add_argument(parser, "astigmatism_angle")
     add_argument(parser, "phase_shift")
@@ -381,8 +382,8 @@ def generate_ctf(args=None):
     # Add some common arguments
     add_argument(parser, "energy")
     add_argument(parser, "defocus")
-    add_argument(parser, "spherical_aberration")
     add_argument(parser, "num_defocus")
+    add_argument(parser, "spherical_aberration")
     add_argument(parser, "astigmatism")
     add_argument(parser, "astigmatism_angle")
     add_argument(parser, "phase_shift")
