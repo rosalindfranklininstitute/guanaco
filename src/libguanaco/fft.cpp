@@ -39,15 +39,18 @@ struct FFT<e_host>::Impl {
     fftwf_init_threads();
     fftwf_plan_with_nthreads(1);
     auto data = (fftwf_complex *)fftw_malloc(sizeof(fftwf_complex) * size);
-    plan_forward = fftwf_plan_dft_1d(size, data, data, FFTW_FORWARD, FFTW_ESTIMATE);
-    plan_inverse = fftwf_plan_dft_1d(size, data, data, FFTW_BACKWARD, FFTW_ESTIMATE);
+    plan_forward =
+      fftwf_plan_dft_1d(size, data, data, FFTW_FORWARD, FFTW_ESTIMATE);
+    plan_inverse =
+      fftwf_plan_dft_1d(size, data, data, FFTW_BACKWARD, FFTW_ESTIMATE);
     fftw_free(data);
   }
 
   void create_plan_2d(size_type xsize, size_type ysize) {
     fftwf_init_threads();
     fftwf_plan_with_nthreads(1);
-    auto data = (fftwf_complex *)fftw_malloc(sizeof(fftwf_complex) * xsize * ysize);
+    auto data =
+      (fftwf_complex *)fftw_malloc(sizeof(fftwf_complex) * xsize * ysize);
     plan_forward =
       fftwf_plan_dft_2d(ysize, xsize, data, data, FFTW_FORWARD, FFTW_ESTIMATE);
     plan_inverse =
@@ -84,7 +87,8 @@ template <>
 FFT<e_host>::FFT() : pimpl(std::make_unique<Impl>()) {}
 
 template <>
-FFT<e_host>::FFT(const FFT &other) : pimpl(std::make_unique<Impl>(*other.pimpl)) {}
+FFT<e_host>::FFT(const FFT &other)
+    : pimpl(std::make_unique<Impl>(*other.pimpl)) {}
 
 template <>
 FFT<e_host>::FFT(FFT &&other) = default;
@@ -107,7 +111,8 @@ FFT<e_host>::FFT(size_type size) : pimpl(std::make_unique<Impl>()) {
 }
 
 template <>
-FFT<e_host>::FFT(size_type xsize, size_type ysize) : pimpl(std::make_unique<Impl>()) {
+FFT<e_host>::FFT(size_type xsize, size_type ysize)
+    : pimpl(std::make_unique<Impl>()) {
   pimpl->create_plan_2d(xsize, ysize);
 }
 

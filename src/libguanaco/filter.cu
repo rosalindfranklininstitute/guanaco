@@ -85,10 +85,10 @@ void Filter<e_device>::operator()(float *data) const {
 
     // Scale the filtered data
     auto factor = num_pixels_ * 2;
-    thrust::transform(
-      rows_f.begin(), rows_f.end(), rows_f.begin(), [factor] __device__(auto x) {
-        return x / factor;
-      });
+    thrust::transform(rows_f.begin(),
+                      rows_f.end(),
+                      rows_f.begin(),
+                      [factor] __device__(auto x) { return x / factor; });
 
     // Copy the filtered data back into the array
     for (int i = 0; i < num_angles_; ++i) {

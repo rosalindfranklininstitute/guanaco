@@ -148,7 +148,9 @@ namespace detail {
       cudaFreeArray(sinogram_array_);
     }
 
-    void copy_angles(const float *angles, size_type num_angles, float centre) const {
+    void copy_angles(const float *angles,
+                     size_type num_angles,
+                     float centre) const {
       // Copy the data to the symbol. For some reason I can't pass the symbol
       // pointer as normal (no idea) so I have to pass a pointer to the
       // symbol array pointer and then dereference!
@@ -173,7 +175,8 @@ namespace detail {
         auto sin_angle = std::sin(angle);
         auto det_x0 = -centre * cos_angle;
         auto det_y0 = -centre * sin_angle;
-        auto ray_length = std::sqrt(cos_angle * cos_angle + sin_angle * sin_angle);
+        auto ray_length =
+          std::sqrt(cos_angle * cos_angle + sin_angle * sin_angle);
         auto d = cos_angle * cos_angle + sin_angle * sin_angle;
 
         // Fill the arrays
@@ -202,8 +205,10 @@ namespace detail {
 
       // Copy the data
       cudaMemcpy3DParms copy_params{0};
-      copy_params.srcPtr = make_cudaPitchedPtr(
-        (void *)sinogram, extent.width * sizeof(float), extent.width, extent.height);
+      copy_params.srcPtr = make_cudaPitchedPtr((void *)sinogram,
+                                               extent.width * sizeof(float),
+                                               extent.width,
+                                               extent.height);
       copy_params.dstArray = sinogram_array_;
       copy_params.extent = extent;
       copy_params.kind = cudaMemcpyDeviceToDevice;
@@ -220,7 +225,8 @@ namespace detail {
       g::sinogram.normalized = false;
 
       // Bind the texture to the array
-      error = cudaBindTextureToArray(g::sinogram, sinogram_array_, channel_desc);
+      error =
+        cudaBindTextureToArray(g::sinogram, sinogram_array_, channel_desc);
       GUANACO_ASSERT_CUDA(error == cudaSuccess);
     }
 
@@ -232,9 +238,9 @@ namespace detail {
       GUANACO_ASSERT(num_defocus_ == 1 || max_defocus_ > min_defocus_);
 
       // Compute the defocus scale and offset
-      auto dscale = num_defocus_ > 1
-                      ? num_defocus_ * pixel_size_ / (max_defocus_ - min_defocus_)
-                      : 0;
+      auto dscale = num_defocus_ > 1 ? num_defocus_ * pixel_size_
+                                         / (max_defocus_ - min_defocus_)
+                                     : 0;
       auto doffset = -dscale * (min_defocus_ / pixel_size_);
 
       // Get some other quantities
@@ -243,7 +249,8 @@ namespace detail {
       auto recon = thrust::device_pointer_cast(reconstruction);
 
       // Initialise the functor
-      BPFunction func(num_angles_, grid_width, grid_height, scale, dscale, doffset);
+      BPFunction func(
+        num_angles_, grid_width, grid_height, scale, dscale, doffset);
 
       // Do the reconstruction
       thrust::transform(index, index + grid_size, recon, recon, func);
@@ -324,7 +331,8 @@ void Reconstructor_t<e_device>::operator()(const float *sinogram,
   project(sinogram_d.data().get(), reconstruction_d.data().get());
 
   // Copy the data back to the host ptr
-  thrust::copy(reconstruction_d.begin(), reconstruction_d.end(), reconstruction);
+  thrust::copy(
+    reconstruction_d.begin(), reconstruction_d.end(), reconstruction);
 }
 
 }  // namespace guanaco
