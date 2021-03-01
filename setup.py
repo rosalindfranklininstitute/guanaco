@@ -25,6 +25,7 @@ def main():
                 "guanaco=guanaco.command_line:main",
                 "guanaco.plot_ctf=guanaco.command_line:plot_ctf",
                 "guanaco.generate_ctf=guanaco.command_line:generate_ctf",
+                "guanaco.correct=guanaco.command_line:correct",
             ]
         },
         extras_require={
