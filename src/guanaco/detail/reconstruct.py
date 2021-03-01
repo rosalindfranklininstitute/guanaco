@@ -41,41 +41,6 @@ def get_centre(shape, centre, sinogram_order=True):
     return centre.astype(dtype="float32", copy=False)
 
 
-def get_ctf(
-    shape,
-    pixel_size,
-    energy,
-    defocus,
-    spherical_aberration,
-    astigmatism=None,
-    astigmatism_angle=None,
-):
-    """
-    Get the CTF
-
-    Params:
-        shape (tuple): The image size
-        pixel_size (float): The pixel size
-        energy (float): The electron energy (keV)
-        defocus (float): The defocus (A)
-        spherical_aberration (float): The spherical aberration (mm)
-        astigmatism (float): The 2-fold astigmatism (A)
-        astigmatism_angle (float): The angle for 2-fold astigmatism (deg)
-
-    Returns:
-        array: The CTF image
-
-    """
-    ctf_calculator = guanaco.detail.CTF(
-        l=guanaco.detail.get_electron_wavelength(energy * 1000),
-        df=defocus,
-        Cs=spherical_aberration * 1e7,
-        Ca=astigmatism,
-        Pa=astigmatism_angle * pi / 180,
-    )
-    return ctf_calculator.get_ctf_simple(shape[1], shape[0], pixel_size)
-
-
 def reconstruct(
     tomogram,
     angles,
@@ -154,105 +119,6 @@ def reconstruct(
     return reconstruction
 
 
-def get_corrected_projections(
-    projections,
-    centre=None,
-    pixel_size=1,
-    energy=None,
-    defocus=None,
-    num_defocus=None,
-    spherical_aberration=None,
-    astigmatism=None,
-    astigmatism_angle=None,
-    intermediate_filename="GUANACO_CORRECTED.dat",
-    device="cpu",
-):
-    # Set the min and max defoci
-    min_defocus = 0
-    max_defocus = 0
-
-    # If we have no defocus set then do nothing. Other correct them
-    if defocus is not None:
-
-        # Check the number of defoci
-        if num_defocus is None or num_defocus <= 0:
-            num_defocus = 1
-
-        # Get the min and max defoci and the step
-        if num_defocus == 1:
-            min_defocus = defocus
-            max_defocus = defocus
-            step_defocus = 0
-        elif num_defocus > 1:
-            shape = projections.shape
-            z0 = defocus - centre * pixel_size
-            z1 = defocus + centre * pixel_size
-            z2 = defocus - (shape[2] - centre) * pixel_size
-            z3 = defocus + (shape[2] - centre) * pixel_size
-            min_defocus = min([z0.min(), z1.min(), z2.min(), z3.min()])
-            max_defocus = max([z0.max(), z1.max(), z2.max(), z3.max()])
-            step_defocus = (max_defocus - min_defocus) / (num_defocus - 1)
-
-        # The shape of the corrected projection array
-        corrected_shape = (
-            projections.shape[0],
-            num_defocus,
-            projections.shape[1],
-            projections.shape[2],
-        )
-
-        # Create a memory mapped file of the correct dimension
-        corrected_projections = numpy.memmap(
-            intermediate_filename, mode="w+", dtype="float32", shape=corrected_shape
-        )
-
-        # Precompute the CTF for each defoci
-        ctf_array = numpy.zeros(
-            (num_defocus, corrected_shape[2], corrected_shape[3]), dtype="complex64"
-        )
-        for d in range(num_defocus):
-
-            # Get the defocus
-            df = min_defocus + d * step_defocus
-
-            # Generate the ctf
-            print("Computing CTF for defocus = %.2f" % df)
-            ctf_array[d, :, :] = get_ctf(
-                corrected_shape[2:],
-                pixel_size,
-                energy,
-                df,
-                spherical_aberration,
-                astigmatism,
-                astigmatism_angle,
-            )
-
-        # Loop through all the projections and defoci and perform the CTF
-        # correction
-        for z in range(projections.shape[0]):
-            image = projections[z, :, :]
-            print(
-                "Correcting image %d/%d with %d defoci"
-                % (z + 1, projections.shape[0], len(ctf_array))
-            )
-            guanaco.detail.corr(
-                image, ctf_array, corrected_projections[z, :, :, :], device
-            )
-
-        # Remove the dimension for corrections if only one correction
-        if corrected_projections.shape[1] == 1:
-            corrected_projections = corrected_projections.reshape(projections.shape)
-
-        # Set the projections to be the corrected projections
-        projections = corrected_projections
-
-    else:
-        defocus = 0
-
-    # Return the projections with the min and max relative defoci
-    return (projections, min_defocus - defocus, max_defocus - defocus)
-
-
 def reconstruct_file(
     input_filename,
     output_filename,
@@ -261,9 +127,11 @@ def reconstruct_file(
     energy=None,
     defocus=None,
     num_defocus=None,
+    step_defocus=None,
     spherical_aberration=None,
     astigmatism=None,
     astigmatism_angle=None,
+    phase_shift=None,
     device="cpu",
     ncore=None,
     transform=None,
@@ -312,6 +180,7 @@ def reconstruct_file(
         angles, voxel_size = read_projection_metadata(infile)
 
         # Get the pixel size
+        assert voxel_size["x"] == voxel_size["y"]
         pixel_size = 1.0  # FIXME voxel_size["x"]
 
         # Get the projection data
@@ -328,16 +197,18 @@ def reconstruct_file(
         centre = get_centre(projections.shape, centre, False)
 
         # Get the corrected projections.
-        projections, min_defocus, max_defocus = get_corrected_projections(
+        projections, min_defocus, max_defocus = guanaco.correct_projections(
             projections,
             centre,
             pixel_size,
             energy,
             defocus,
             num_defocus,
+            step_defocus,
             spherical_aberration,
             astigmatism,
             astigmatism_angle,
+            phase_shift,
             corrected_filename,
             device,
         )

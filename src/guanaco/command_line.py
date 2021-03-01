@@ -239,6 +239,7 @@ def main(args=None):
     add_argument(parser, "energy")
     add_argument(parser, "defocus")
     add_argument(parser, "num_defocus")
+    add_argument(parser, "step_defocus")
     add_argument(parser, "spherical_aberration")
     add_argument(parser, "astigmatism")
     add_argument(parser, "astigmatism_angle")
@@ -256,9 +257,11 @@ def main(args=None):
         energy=args.energy,
         defocus=args.defocus,
         num_defocus=args.num_defocus,
+        step_defocus=args.step_defocus,
         spherical_aberration=args.spherical_aberration,
         astigmatism=args.astigmatism,
         astigmatism_angle=args.astigmatism_angle,
+        phase_shift=args.phase_shift,
         device=args.device,
         ncore=args.ncore,
         transform=args.transform,
@@ -427,4 +430,94 @@ def generate_ctf(args=None):
         acceleration_voltage_spread=args.acceleration_voltage_spread,
         phase_shift=args.phase_shift,
         recentre=args.recentre,
+    )
+
+
+def correct(args=None):
+    """
+    Do the CTF correction
+
+    """
+
+    # Create the command line parser
+    parser = argparse.ArgumentParser(description="Perform CTF correction")
+
+    parser.add_argument(
+        "-o",
+        dest="output",
+        default="corrected.mrc",
+        type=str,
+        help="The output file containing the corrected projections.",
+    )
+
+    parser.add_argument(
+        "-i",
+        dest="input",
+        default=None,
+        required=True,
+        type=str,
+        help="The input file containing a stack of projection images.",
+    )
+
+    parser.add_argument(
+        "-d,--device",
+        dest="device",
+        default="cpu",
+        choices=["cpu", "gpu"],
+        help="Use either the CPU or GPU",
+    )
+
+    parser.add_argument(
+        "--transform",
+        dest="transform",
+        default=None,
+        choices=["none", "minus"],
+        help="Set the transform to use on the corrected projections",
+    )
+
+    parser.add_argument(
+        "-n,--ncore",
+        dest="ncore",
+        default=None,
+        type=int,
+        help="Set the number of cores to use",
+    )
+
+    parser.add_argument(
+        "--centre",
+        dest="centre",
+        default=None,
+        type=float,
+        help="The rotation centre in pixels.",
+    )
+
+    # Add some common arguments
+    add_argument(parser, "energy")
+    add_argument(parser, "defocus")
+    add_argument(parser, "num_defocus")
+    add_argument(parser, "step_defocus")
+    add_argument(parser, "spherical_aberration")
+    add_argument(parser, "astigmatism")
+    add_argument(parser, "astigmatism_angle")
+    add_argument(parser, "phase_shift")
+
+    # Parse the arguments
+    args = parser.parse_args(args=args)
+
+    # Do the reconstruction
+    guanaco.correct_file(
+        input_filename=args.input,
+        output_filename=args.output,
+        centre=args.centre,
+        energy=args.energy,
+        defocus=args.defocus,
+        num_defocus=args.num_defocus,
+        step_defocus=args.step_defocus,
+        spherical_aberration=args.spherical_aberration,
+        astigmatism=args.astigmatism,
+        astigmatism_angle=args.astigmatism_angle,
+        phase_shift=args.phase_shift,
+        device=args.device,
+        ncore=args.ncore,
+        transform=args.transform,
     )
