@@ -46,22 +46,22 @@ namespace detail {
 
     // Allocate buffers for the complex data, return data and ctf
     auto size = ysize * xsize;
-    auto image_d = vector_type(size);
+    auto image_d = complex_vector_type(size);
     auto fft_d = complex_vector_type(size);
     auto ctf_d = complex_vector_type(size);
     auto rec_d = vector_type(size);
 
     // Copy image to device
     thrust::copy(image, image + size, image_d.begin());
+      
+    // Perform the forward FT
+    fft.forward(image_d.data().get());
 
     // Loop through all the projections and all the CTFs
     for (auto j = 0; j < num_ctf; ++j) {
       // Copy the data into the device buffers
       thrust::copy(ctf + j * size, ctf + (j + 1) * size, ctf_d.begin());
       thrust::copy(image_d.begin(), image_d.end(), fft_d.begin());
-
-      // Perform the forward FT
-      fft.forward(fft_d.data().get());
 
       // Do the CTF correction
       thrust::transform(

@@ -43,6 +43,13 @@ namespace detail {
 
     // Allocate a complex buffer for the complex data
     auto d = complex_vector_type(xsize * ysize);
+    auto buffer = complex_vector_type(xsize * ysize);
+      
+    // Copy the image into the complex zero padded array
+    std::copy(image, image + ysize * xsize, buffer.begin());
+      
+    // Perform the forward FT
+    fft.forward(buffer.data());
 
     // Loop through all the projections and all the CTFs
     for (auto j = 0; j < num_ctf; ++j) {
@@ -51,10 +58,7 @@ namespace detail {
       auto r = rec + j * ysize * xsize;
 
       // Copy the image into the complex zero padded array
-      std::copy(image, image + ysize * xsize, d.begin());
-
-      // Perform the forward FT
-      fft.forward(d.data());
+      std::copy(buffer, buffer + ysize * xsize, d.begin());
 
       // Do the CTF correction
       for (auto k = 0; k < ysize * xsize; ++k) {
@@ -74,6 +78,5 @@ namespace detail {
 
 // Explicitly instantiate template functions
 template class detail::Corrector<e_host, float>;
-/* template class detail::Corrector<e_device, float>; */
 
 }  // namespace guanaco
