@@ -58,7 +58,7 @@ namespace detail {
       auto r = rec + j * ysize * xsize;
 
       // Copy the image into the complex zero padded array
-      std::copy(buffer, buffer + ysize * xsize, d.begin());
+      std::copy(buffer.begin(), buffer.end(), d.begin());
 
       // Do the CTF correction
       for (auto k = 0; k < ysize * xsize; ++k) {
