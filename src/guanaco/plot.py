@@ -42,6 +42,8 @@ def plot_ctf(
     phase_shift=0,
     component="imag",
     envelope=True,
+    ax=None,
+    label=None,
 ):
     """
     Plot the CTF
@@ -63,6 +65,8 @@ def plot_ctf(
         phase_shift (float): The phase shift (rad) - 0 without phase plate, pi/2 with phase plate
         component (str): The bit to plot (real, imag, abs)
         envelope (bool): Plot the envelope function
+        ax (object): The axis object (if none create figure)
+        label (str): The label for the plot
 
     """
     # Convert some quantities
@@ -108,17 +112,26 @@ def plot_ctf(
     ctf = ctf_calculator.get_ctf(q, theta)
 
     # Create the figure
-    fig, ax = pylab.subplots(figsize=(12, 8))
+    if ax is None:
+        fig, ax = pylab.subplots(figsize=(12, 8))
+    else:
+        fig = None
     ax.set_xlabel("Spatial frequency (1/A)")
     ax.set_ylabel("CTF")
 
     # Plot the CTF
     if component == "real":
-        ax.plot(q, numpy.real(ctf), label="CTF (real)")
+        if label is None:
+            label = "CTF (real)"
+        ax.plot(q, numpy.real(ctf), label=label)
     elif component == "imag":
-        ax.plot(q, numpy.imag(ctf), label="CTF (imag)")
+        if label is None:
+            label = "CTF (imag)"
+        ax.plot(q, numpy.imag(ctf), label=label)
     elif component == "abs":
-        ax.plot(q, numpy.abs(ctf), label="CTF (abs)")
+        if label is None:
+            label = "CTF (abs)"
+        ax.plot(q, numpy.abs(ctf), label=label)
     else:
         raise ValueError(
             "Expected component in ['real', 'imag', 'abs'], got %s" % component
@@ -139,13 +152,12 @@ def plot_ctf(
         ax.legend()
 
     # Save the figure
-    if filename is not None:
-        fig.savefig(filename, dpi=300, bbox_inches="tight")
-    else:
-        pylab.show()
-
-    # Close the figure
-    pylab.close(fig)
+    if fig is not None:
+        if filename is not None:
+            fig.savefig(filename, dpi=300, bbox_inches="tight")
+        elif show:
+            pylab.show()
+        pylab.close(fig)
 
 
 def generate_ctf(
