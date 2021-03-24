@@ -86,9 +86,11 @@ void correct(const T *image,
   case e_device:
     detail::correct_internal<e_device, T>(
       image, ctf, rec, xsize, ysize, num_ctf);
+    break;
   case e_host:
   default:
     detail::correct_internal<e_host, T>(image, ctf, rec, xsize, ysize, num_ctf);
+    break;
   };
 }
 

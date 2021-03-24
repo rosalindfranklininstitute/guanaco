@@ -44,7 +44,7 @@ struct FFT<e_device>::Impl {
       cufftPlan1d(&plan_inverse, size, CUFFT_C2R, nbatch);
     } else {
       cufftPlan1d(&plan_forward, size, CUFFT_C2C, nbatch);
-      cufftPlan1d(&plan_inverse, size, CUFFT_C2C, nbatch);
+      plan_inverse = plan_forward;
     }
   }
 
@@ -58,7 +58,7 @@ struct FFT<e_device>::Impl {
       cufftPlan2d(&plan_inverse, ysize, xsize, CUFFT_C2R);
     } else {
       cufftPlan2d(&plan_forward, ysize, xsize, CUFFT_C2C);
-      cufftPlan2d(&plan_inverse, ysize, xsize, CUFFT_C2C);
+      plan_inverse = plan_forward;
     }
   }
 

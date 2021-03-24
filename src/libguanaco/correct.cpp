@@ -18,6 +18,8 @@
  * You should have received a copy of the GNU General Public License
  * along with guanaco-ctf. If not, see <http:// www.gnu.org/licenses/>.
  */
+#include <future>
+#include <iostream>
 #include <vector>
 #include <guanaco/error.h>
 #include <guanaco/fft.h>
@@ -42,37 +44,46 @@ namespace detail {
     auto fft = FFT<e_host>(xsize, ysize);
 
     // Allocate a complex buffer for the complex data
-    auto d = complex_vector_type(xsize * ysize);
-    auto buffer = complex_vector_type(xsize * ysize);
-      
-    // Copy the image into the complex zero padded array
-    std::copy(image, image + ysize * xsize, buffer.begin());
+    auto buffer = complex_vector_type(num_ctf * xsize * ysize);
+    auto buf = buffer.data();
       
     // Perform the forward FT
     fft.forward(buffer.data());
 
-    // Loop through all the projections and all the CTFs
+    // Loop through all the projections and do CTF correction
+    std::vector<std::future<void>> result;
     for (auto j = 0; j < num_ctf; ++j) {
-      // Get the CTF and output arrays
-      auto c = ctf + j * ysize * xsize;
-      auto r = rec + j * ysize * xsize;
+      result.push_back(
+        std::async(
+          std::launch::async, 
+          [&](auto j) {
 
-      // Copy the image into the complex zero padded array
-      std::copy(buffer.begin(), buffer.end(), d.begin());
+            // Get the CTF and output arrays
+            auto c = ctf + j * ysize * xsize;
+            auto r = rec + j * ysize * xsize;
+            auto b = buf + j * ysize * xsize;
 
-      // Do the CTF correction
-      for (auto k = 0; k < ysize * xsize; ++k) {
-        d[k] = phase_flip(d[k], c[k]);
-      }
+            // Copy the image into the complex zero padded array
+            std::copy(image, image + ysize * xsize, b);
 
-      // Perform the inverse FT
-      fft.inverse(d.data());
+            // Do the CTF correction
+            for (auto k = 0; k < ysize * xsize; ++k) {
+              b[k] = phase_flip(b[k], c[k]);
+            }
 
-      // Copy the data to the output array
-      for (auto k = 0; k < ysize * xsize; ++k) {
-        r[k] = d[k].real();
-      }
+            // Perform the inverse FT
+            fft.inverse(b);
+
+            // Copy the data to the output array
+            for (auto k = 0; k < ysize * xsize; ++k) {
+              r[k] = b[k].real();
+            }
+
+          }, j));
     }
+
+    // Wait for the results
+    for(auto &r : result) { r.wait(); }
   }
 }  // namespace detail
 
