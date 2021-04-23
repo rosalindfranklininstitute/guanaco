@@ -52,10 +52,10 @@ python setup.py develop
 
 ## Testing
 
-To run the tests, clone this repository and the do the following:
+To run the tests, follow the installation instructions for developers and then do the following:
 
 ```sh
-python setup.py test
+pytest
 ```
 
 ## Usage
