@@ -10,17 +10,6 @@ from setuptools import setup, find_packages, Extension
 from setuptools.command.build_ext import build_ext
 
 
-class CMakeExtension(Extension):
-    """
-    The cmake extension
-
-    """
-
-    def __init__(self, name, cmake_lists_dir=".", sources=[], **kwargs):
-        Extension.__init__(self, name, sources=sources, **kwargs)
-        self.cmake_lists_dir = os.path.abspath(cmake_lists_dir)
-
-
 class CMakeBuild(build_ext):
     """
     Build the extensions
@@ -28,7 +17,10 @@ class CMakeBuild(build_ext):
     """
 
     def build_extensions(self):
-           
+
+        # Set the cmake directory
+        cmake_lists_dir = os.path.abspath(".")
+
         # Ensure the build directory exists
         if not os.path.exists(self.build_temp):
             os.makedirs(self.build_temp)
@@ -41,13 +33,14 @@ class CMakeBuild(build_ext):
 
         # Arguments to cmake
         cmake_args = [
+            "-DCMAKE_BUILD_TYPE=%s" % "Release",
             "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=%s" % extdir,
             "-DPYTHON_EXECUTABLE=%s" % sys.executable,
         ]
 
         # Config and the extension
         subprocess.check_call(
-            ["cmake", ext.cmake_lists_dir] + cmake_args, cwd=self.build_temp
+            ["cmake", cmake_lists_dir] + cmake_args, cwd=self.build_temp
         )
 
         # Build the extension
@@ -68,7 +61,7 @@ def main():
         setup_requires=["pytest-runner"],
         tests_require=tests_require,
         test_suite="tests",
-        ext_modules=[CMakeExtension("guanaco_ext")],
+        ext_modules=[Extension("guanaco_ext", [])],
         cmdclass={"build_ext": CMakeBuild},
         entry_points={
             "console_scripts": [
