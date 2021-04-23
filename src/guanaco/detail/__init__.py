@@ -18,4 +18,4 @@
 # You should have received a copy of the GNU General Public License
 # along with guanaco-ctf. If not, see <http:// www.gnu.org/licenses/>.
 #
-from guanaco.detail.guanaco_ext import *  # noqa
+from guanaco_ext import *  # noqa

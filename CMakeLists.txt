@@ -1,11 +1,16 @@
 ##############################################################################
-# Build file for guanaco-ctf project
+# Build file for guanaco project
 ##############################################################################
 
 cmake_minimum_required(VERSION 3.17.0)
 
 # Set the project name
-project(guanaco-ctf CXX CUDA)
+project(guanaco CXX CUDA)
+
+# Set the build type to release
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release)
+endif()
 
 # Set the cmake module path
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
@@ -59,7 +64,7 @@ set_property(TARGET guanaco PROPERTY INTERPROCEDURAL_OPTIMIZATION True)
 target_include_directories(guanaco PUBLIC include src ${FFTW_INCLUDES})
 
 ##############################################################################
-# Build the guanaco-ctf library
+# Build the guanaco library
 ##############################################################################
 
 # Add a C/C++ extension
@@ -73,12 +78,11 @@ set_property(TARGET guanaco_ext PROPERTY CUDA_ARCHITECTURES OFF)
 # Ensure we are using C++11
 target_compile_features(guanaco_ext PUBLIC cxx_std_14)
 
-
 # Set the include directory
 target_include_directories(guanaco_ext PUBLIC include src)
 
 # Set the link libraries
-target_link_libraries(guanaco_ext PUBLIC #guanaco
+target_link_libraries(guanaco_ext PUBLIC
   guanaco
   CUDA::cudart
   CUDA::cuda_driver
@@ -86,4 +90,4 @@ target_link_libraries(guanaco_ext PUBLIC #guanaco
   ${FFTW_LIBRARIES})
 
 # Install the python extension
-install(TARGETS guanaco_ext LIBRARY DESTINATION src/guanaco/detail)
+install(TARGETS guanaco_ext LIBRARY DESTINATION ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
