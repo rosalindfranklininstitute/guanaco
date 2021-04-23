@@ -7,20 +7,46 @@
 
 ## Installation
 
-To install from source, clone this repository and then do the following:
-
-```sh
-git submodule update --init --recursive
-```
-
 In order to build this package, the following dependencies are required:
 
 - The CUDA toolkit
 - FFTW
 
+The repository has a submodule for pybind11 so after cloning the repository run
+
 ```sh
+git submodule update --init --recursive
+```
+
+To install from the github repository do the following
+
+```sh
+export CUDACXX=${PATH_TO_CUDA}/bin/nvcc
+python -m pip install git+https://github.com/rosalindfranklininstitute/guanaco.git@master#egg=guanaco
+```
+
+To install from source, clone this repository and then do the following:
+
+```sh
+export CUDACXX=${PATH_TO_CUDA}/bin/nvcc
+python -m pip install .
+```
+
+If you would like to run the tests then, clone this repository and then do the following:
+
+```sh
+export CUDACXX=${PATH_TO_CUDA}/bin/nvcc
+python -m pip install .[test]
+```
+
+## Installation for developers
+
+To install for development, clone this repository and then do the following:
+
+```sh
+export CUDACXX=${PATH_TO_CUDA}/bin/nvcc
 pip install -r requirements.txt
-python setup.py install 
+python setup.py develop 
 ```
 
 ## Testing

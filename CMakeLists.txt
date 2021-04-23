@@ -2,7 +2,7 @@
 # Build file for guanaco-ctf project
 ##############################################################################
 
-cmake_minimum_required(VERSION 3.12.0)
+cmake_minimum_required(VERSION 3.17.0)
 
 # Set the project name
 project(guanaco-ctf CXX CUDA)
@@ -11,8 +11,8 @@ project(guanaco-ctf CXX CUDA)
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
 # Find CUDA
+find_package(CUDAToolkit REQUIRED)
 find_package(FFTW REQUIRED)
-find_package(CUDA REQUIRED)
 
 # Add pybind sub directory
 add_subdirectory(pybind11)
@@ -80,8 +80,9 @@ target_include_directories(guanaco_ext PUBLIC include src)
 # Set the link libraries
 target_link_libraries(guanaco_ext PUBLIC #guanaco
   guanaco
-  ${CUDA_LIBRARIES} 
-  ${CUDA_CUFFT_LIBRARIES}
+  CUDA::cudart
+  CUDA::cuda_driver
+  CUDA::cufft
   ${FFTW_LIBRARIES})
 
 # Install the python extension
