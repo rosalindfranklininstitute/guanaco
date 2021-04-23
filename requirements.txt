@@ -5,3 +5,4 @@ wheel
 pytest
 pytest-cov
 mock
+scipy

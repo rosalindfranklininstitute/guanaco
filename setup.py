@@ -52,12 +52,12 @@ def main():
     Setup the package
 
     """
-    tests_require = ["pytest", "pytest-cov", "mock"]
+    tests_require = ["pytest", "pytest-cov", "mock", "scipy"]
 
     setup(
         package_dir={"": "src"},
         packages=find_packages(where="src"),
-        install_requires=["mrcfile", "numpy"],
+        install_requires=["mrcfile", "numpy", "pyyaml"],
         setup_requires=["pytest-runner"],
         tests_require=tests_require,
         test_suite="tests",
