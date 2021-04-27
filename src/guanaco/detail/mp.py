@@ -15,10 +15,10 @@ def get_ncore_slices(axis_size, ncore=None, nchunk=None):
         # calculate number of slices to send to each GPU
         chunk_size = axis_size // ncore
         leftover = axis_size % ncore
-        sizes = numpy.ones(ncore, dtype=numpy.int) * chunk_size
+        sizes = numpy.ones(ncore, dtype="int") * chunk_size
         # evenly distribute leftover across workers
         sizes[:leftover] += 1
-        offsets = numpy.zeros(ncore + 1, dtype=numpy.int)
+        offsets = numpy.zeros(ncore + 1, dtype="int")
         offsets[1:] = numpy.cumsum(sizes)
         slices = [
             numpy.s_[offsets[i] : offsets[i + 1]] for i in range(offsets.shape[0] - 1)
