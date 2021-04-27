@@ -16,7 +16,7 @@ To install from the github repository do the following
 
 ```sh
 export CUDACXX=${PATH_TO_CUDA}/bin/nvcc
-python -m pip install git+https://github.com/rosalindfranklininstitute/guanaco.git@master#egg=guanaco
+python -m pip install git+https://github.com/rosalindfranklininstitute/guanaco.git@master
 ```
 
 To install from source, clone this repository. The repository has a submodule
