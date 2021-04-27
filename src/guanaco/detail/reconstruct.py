@@ -181,7 +181,8 @@ def reconstruct_file(
 
         # Get the pixel size
         assert voxel_size["x"] == voxel_size["y"]
-        pixel_size = 1.0  # FIXME voxel_size["x"]
+        pixel_size = voxel_size["x"]
+        print("Pixel size %d A" % pixel_size)
 
         # Get the projection data
         projections = infile.data

@@ -41,9 +41,11 @@ def plot_ctf(
     acceleration_voltage_spread=0.8e-6,
     phase_shift=0,
     component="imag",
-    envelope=True,
+    envelope=None,
     ax=None,
     label=None,
+    Et_label=None,
+    Es_label=None,
 ):
     """
     Plot the CTF
@@ -67,6 +69,8 @@ def plot_ctf(
         envelope (bool): Plot the envelope function
         ax (object): The axis object (if none create figure)
         label (str): The label for the plot
+        Et_label (str): The label for the plot
+        Es_label (str): The label for the plot
 
     """
     # Convert some quantities
@@ -120,7 +124,9 @@ def plot_ctf(
     ax.set_ylabel("CTF")
 
     # Plot the CTF
-    if component == "real":
+    if component is None:
+        pass
+    elif component == "real":
         if label is None:
             label = "CTF (real)"
         ax.plot(q, numpy.real(ctf), label=label)
@@ -138,17 +144,23 @@ def plot_ctf(
         )
 
     # Plot the envelope
-    if envelope:
+    if envelope is not None:
 
         # Compute the spatial incoherence envelope
-        Es = ctf_calculator.get_Es(q, theta)
+        if envelope in ["spatial", "all"]:
+            if Es_label is None:
+                Es_label = "Es"
+            Es = ctf_calculator.get_Es(q, theta)
+            ax.plot(q, Es, label=label)
 
         # Compute the temporal incoherence envelope
-        Et = ctf_calculator.get_Et(q)
+        if envelope in ["temporal", "all"]:
+            if Et_label is None:
+                Et_label = "Et"
+            Et = ctf_calculator.get_Et(q)
+            ax.plot(q, Et, label=label)
 
         # Plot the envelope
-        ax.plot(q, Es, label="Es")
-        ax.plot(q, Et, label="Et")
         ax.legend()
 
     # Save the figure
