@@ -235,6 +235,25 @@ def main(args=None):
         help="The rotation centre in pixels.",
     )
 
+    parser.add_argument(
+        "--method",
+        dest="method",
+        default="FBP_CTF",
+        choices=["FBP_CTF", "FBP", "SIRT", "SART", "CGLS", "EM"],
+        help="""
+            Select the reconstruction algorithm. The FBP_CTF algorithm uses 3D
+            CTF correction with FBP, other algorithms require tomopy to be
+            installed""",
+    )
+
+    parser.add_argument(
+        "--num_iter",
+        dest="num_iter",
+        default=50,
+        type=int,
+        help="The number of iterations to use in SIRT/SART/CGLS/EM",
+    )
+
     # Add some common arguments
     add_argument(parser, "energy")
     add_argument(parser, "defocus")
@@ -266,6 +285,8 @@ def main(args=None):
         ncore=args.ncore,
         transform=args.transform,
         chunk_size=args.chunk_size,
+        method=args.method,
+        num_iter=args.num_iter,
     )
 
 
