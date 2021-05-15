@@ -42,59 +42,6 @@ def get_centre(shape, centre, sinogram_order=True):
 
 
 def reconstruct(
-    input_filename,
-    output_filename,
-    device="cpu",
-    ncore=None,
-    transform=None,
-    chunk_size=None,
-):
-    """
-    Do the reconstruction
-
-    """
-
-    # Open the input file
-    print("Reading %s" % input_filename)
-    infile = mrcfile.mmap(input_filename)
-    voxel_size = infile.voxel_size
-    print("Voxel size: ", infile.voxel_size)
-
-    # Get the infile data
-    projections = infile.data
-
-    # Read the angles
-    theta = numpy.zeros(projections.shape[0], dtype=numpy.float32)
-    for i in range(infile.extended_header.shape[0]):
-        theta[i] = infile.extended_header[i]["Alpha tilt"] * pi / 180.0
-        print("Image %d; angle %.4f" % (i, theta[i]))
-
-    # Write the output data
-    print("Writing reconstruction to %s" % output_filename)
-    output_shape = (projections.shape[2], projections.shape[1], projections.shape[2])
-    outfile = mrcfile.new_mmap(
-        output_filename, overwrite=True, mrc_mode=2, shape=output_shape
-    )
-    outfile.voxel_size = voxel_size
-
-    # Set the chunk size
-    if chunk_size is None:
-        chunk_size = projections.shape[1]
-
-    # Reconstruct in chunks
-    for y0 in range(0, projections.shape[1], chunk_size):
-        y1 = min(y0 + chunk_size, projections.shape[1])
-        print("Reconstructing slices %d -> %d" % (y0, y1))
-        outfile.data[:, y0:y1, :] = reconstruct_chunk(
-            projections[:, y0:y1, :],
-            theta,
-            device=device,
-            ncore=ncore,
-            transform=transform,
-        )
-
-
-def reconstruct(
     tomogram,
     angles,
     reconstruction=None,

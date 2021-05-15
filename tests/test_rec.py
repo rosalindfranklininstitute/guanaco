@@ -29,5 +29,5 @@
 # assert diff2 == pytest.approx(0)
 
 
-if __name__ == "__main__":
-    test_rec()
+# if __name__ == "__main__":
+#     test_rec()

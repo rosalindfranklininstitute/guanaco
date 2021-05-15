@@ -46,6 +46,7 @@ def plot_ctf(
     label=None,
     Et_label=None,
     Es_label=None,
+    show=False,
 ):
     """
     Plot the CTF

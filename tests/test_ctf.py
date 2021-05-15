@@ -304,7 +304,7 @@ def ctf2d(
     # Compute the wavelength
     if wavelength is None:
         assert energy is not None
-        wavelength = get_electron_wavelength(energy)
+        wavelength = get_electron_wavelength_py(energy)
 
     # Generate the spatial frequencies (1/A)
     assert len(shape) == 2
