@@ -294,7 +294,7 @@ def ctf2d(
 
     # Compute the defocus spread
     if defocus_spread is None:
-        defocus_spread = get_defocus_spread(
+        defocus_spread = get_defocus_spread_py(
             Cc=chromatic_abberation,
             dEE=energy_spread,
             dII=current_spread,

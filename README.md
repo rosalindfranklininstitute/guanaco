@@ -4,6 +4,7 @@
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/jmp1985/guanaco.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/jmp1985/guanaco/context:python)
 [![Total alerts](https://img.shields.io/lgtm/alerts/g/jmp1985/guanaco.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/jmp1985/guanaco/alerts/)
+[![Building](https://github.com/rosalindfranklininstitute/guanaco/actions/workflows/python-package.yml/badge.svg)](https://github.com/rosalindfranklininstitute/guanaco/actions/workflows/python-package.yml)
 
 ## Installation
 

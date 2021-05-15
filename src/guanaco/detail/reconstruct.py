@@ -300,5 +300,5 @@ def reconstruct_tomopy(
 
     # Reconstruct
     return tomopy.recon(
-        projections, theta, algorithm=tomopy.astra, options=options, ncore=ncore
+        projections, angles, algorithm=tomopy.astra, options=options, ncore=ncore
     )
