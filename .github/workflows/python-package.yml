@@ -28,8 +28,10 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install cuda
       run: |
-        wget https://developer.download.nvidia.com/compute/cuda/11.3.0/local_installers/cuda_11.3.0_465.19.01_linux.run
-        sudo sh cuda_11.3.0_465.19.01_linux.run
+          wget http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1604/x86_64/cuda-repo-ubuntu1604_10.2.89-1_amd64.deb
+          sudo dpkg -i cuda-repo-ubuntu1604_10.2.89-1_amd64.deb
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq --no-install-recommends cuda-10-2
     - name: Install fftw
       run: sudo apt-get install libfftw3-dev
     - name: Install dependencies
