@@ -25,7 +25,7 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install cuda
-      run: sudo apt-get install nvidia-cuda-toolkit
+      run: sudo apt-get install nvidia-cuda-toolkit libfftw3-dev
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
