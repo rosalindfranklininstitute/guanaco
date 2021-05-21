@@ -1,0 +1,5 @@
+include CMakeLists.txt
+recursive-include src *
+recursive-include include *
+recursive-include pybind11 *
+recursive-include cmake *
