@@ -326,8 +326,9 @@ def plot_ctf(args=None):
     parser.add_argument(
         "--envelope",
         dest="envelope",
-        type=bool,
-        default=True,
+        type=str,
+        choices=["spatial", "temporal", "all"],
+        default=None,
         help="Plot the CTF envelope",
     )
 

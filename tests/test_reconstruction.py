@@ -176,9 +176,11 @@ def test_centred_rotation_axis_centred_object_with_ctf(test_data, device):
 
     """
     try:
-        metadata, images, expected = (
-            test_data.centred_rotation_axis_centred_object_with_ctf()
-        )
+        (
+            metadata,
+            images,
+            expected,
+        ) = test_data.centred_rotation_axis_centred_object_with_ctf()
     except Exception:
         return
 
@@ -233,9 +235,11 @@ def test_off_centre_rotation_axis_centred_object_with_ctf(test_data, device):
 
     """
     try:
-        metadata, images, expected = (
-            test_data.off_centre_rotation_axis_centred_object_with_ctf()
-        )
+        (
+            metadata,
+            images,
+            expected,
+        ) = test_data.off_centre_rotation_axis_centred_object_with_ctf()
     except Exception:
         return
 
@@ -290,9 +294,11 @@ def test_centred_rotation_axis_off_centre_object_with_ctf(test_data, device):
 
     """
     try:
-        metadata, images, expected = (
-            test_data.centred_rotation_axis_off_centre_object_with_ctf()
-        )
+        (
+            metadata,
+            images,
+            expected,
+        ) = test_data.centred_rotation_axis_off_centre_object_with_ctf()
     except Exception:
         return
 
@@ -347,9 +353,11 @@ def test_off_centre_rotation_axis_off_centre_object_with_ctf(test_data, device):
 
     """
     try:
-        metadata, images, expected = (
-            test_data.off_centre_rotation_axis_off_centre_object_with_ctf()
-        )
+        (
+            metadata,
+            images,
+            expected,
+        ) = test_data.off_centre_rotation_axis_off_centre_object_with_ctf()
     except Exception:
         return
 
