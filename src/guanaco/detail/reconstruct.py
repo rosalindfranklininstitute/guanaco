@@ -123,6 +123,9 @@ def reconstruct_file(
     input_filename,
     output_filename,
     corrected_filename="GUANACO_CORRECTED.dat",
+    start_angle=None,
+    step_angle=None,
+    pixel_size=None,
     centre=None,
     energy=None,
     defocus=None,
@@ -178,16 +181,20 @@ def reconstruct_file(
     print("Reading %s" % input_filename)
     with mrcfile.mmap(input_filename) as infile:
 
-        # Get the projection metadata
-        angles, voxel_size = read_projection_metadata(infile)
-
-        # Get the pixel size
-        assert voxel_size["x"] == voxel_size["y"]
-        pixel_size = voxel_size["x"]
-        print("Pixel size %d A" % pixel_size)
-
         # Get the projection data
         projections = infile.data
+
+        # Get the projection metadata
+        if start_angle is None or step_angle is None or pixel_size is None:
+            angles, voxel_size = read_projection_metadata(infile)
+            assert voxel_size["x"] == voxel_size["y"]
+            pixel_size = voxel_size["x"]
+        else:
+            angles = start_angle + numpy.arange(projections.shape[0]) * step_angle
+            voxel_size = pixel_size
+
+        # Get the pixel size
+        print("Pixel size %d A" % pixel_size)
 
         # Set the reconstruction shape
         output_shape = (

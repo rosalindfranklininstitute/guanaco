@@ -228,6 +228,30 @@ def main(args=None):
     )
 
     parser.add_argument(
+        "--start_angle",
+        dest="start_angle",
+        default=None,
+        type=float,
+        help="The starting angle in degrees.",
+    )
+
+    parser.add_argument(
+        "--step_angle",
+        dest="step_angle",
+        default=None,
+        type=float,
+        help="The step angle in degrees.",
+    )
+
+    parser.add_argument(
+        "--pixel_size",
+        dest="pixel_size",
+        default=None,
+        type=float,
+        help="The pixel size in A",
+    )
+
+    parser.add_argument(
         "--centre",
         dest="centre",
         default=None,
@@ -272,6 +296,9 @@ def main(args=None):
         input_filename=args.input,
         output_filename=args.output,
         corrected_filename=args.corrected_filename,
+        start_angle=args.start_angle,
+        step_angle=args.step_angle,
+        pixel_size=args.pixel_size,
         centre=args.centre,
         energy=args.energy,
         defocus=args.defocus,
