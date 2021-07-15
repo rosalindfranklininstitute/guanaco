@@ -190,7 +190,7 @@ HOST_DEVICE constexpr T get_log_Es(const CTF &c, T q, T theta) {
   using constants::pi;
   auto df = c.df + c.Ca * std::cos(2 * (theta - c.Pa));
   auto u = 1 + 2 * pi * pi * c.theta_c * c.theta_c * c.dd * c.dd * q * q;
-  auto v = c.Cs * c.l * c.l * c.l * q * q * q + df * c.l * q;
+  auto v = c.Cs * c.l * c.l * c.l * q * q * q - df * c.l * q;
   return -(pi * pi * c.theta_c * c.theta_c * v * v / (c.l * c.l * u));
 }
 
