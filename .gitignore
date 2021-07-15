@@ -141,3 +141,6 @@ _skbuild/
 
 # Clang Format
 .clang-format
+
+# ctags
+tags
