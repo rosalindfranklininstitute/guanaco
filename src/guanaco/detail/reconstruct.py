@@ -275,7 +275,6 @@ def reconstruct_tomopy(
     """
     try:
         import tomopy
-        import tomopy.astra
     except ImportError:
         raise RuntimeError(
             "The reconstruction algorithm selected requires tomopy and astra"
@@ -299,6 +298,6 @@ def reconstruct_tomopy(
         projections = -projections
 
     # Reconstruct
-    return tomopy.recon(
+    reconstruction[:] = tomopy.recon(
         projections, angles, algorithm=tomopy.astra, options=options, ncore=ncore
     )
