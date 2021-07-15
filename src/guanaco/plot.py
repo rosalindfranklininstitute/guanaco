@@ -152,14 +152,14 @@ def plot_ctf(
             if Es_label is None:
                 Es_label = "Es"
             Es = ctf_calculator.get_Es(q, theta)
-            ax.plot(q, Es, label=label)
+            ax.plot(q, Es, label=Es_label)
 
         # Compute the temporal incoherence envelope
         if envelope in ["temporal", "all"]:
             if Et_label is None:
                 Et_label = "Et"
             Et = ctf_calculator.get_Et(q)
-            ax.plot(q, Et, label=label)
+            ax.plot(q, Et, label=Es_label)
 
         # Plot the envelope
         ax.legend()
