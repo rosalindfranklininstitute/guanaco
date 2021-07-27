@@ -33,6 +33,11 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 # Enable LTO
 set(CMAKE_INTERPROCEDURAL_OPTIMIZATION True)
 
+# Use C++14
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
 # Allow Lambdas to be called from device
 set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --extended-lambda")
 
@@ -54,9 +59,6 @@ add_library(guanaco STATIC
 # Setting this option does not pass arch flag to compiler
 set_property(TARGET guanaco PROPERTY CUDA_ARCHITECTURES OFF)
 
-# Ensure we are using C++11
-target_compile_features(guanaco PUBLIC cxx_std_14)
-
 # Enable LTO
 set_property(TARGET guanaco PROPERTY INTERPROCEDURAL_OPTIMIZATION True)
 
@@ -70,13 +72,6 @@ target_include_directories(guanaco PUBLIC include src ${FFTW_INCLUDES})
 # Add a C/C++ extension
 pybind11_add_module(guanaco_ext 
   src/guanaco/detail/ext/guanaco_ext.cpp)
-
-# Not specifying CUDA architecture throws and error.
-# Setting this option does not pass arch flag to compiler
-set_property(TARGET guanaco_ext PROPERTY CUDA_ARCHITECTURES OFF)
-
-# Ensure we are using C++11
-target_compile_features(guanaco_ext PUBLIC cxx_std_14)
 
 # Set the include directory
 target_include_directories(guanaco_ext PUBLIC include src)
