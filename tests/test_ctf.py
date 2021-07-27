@@ -243,7 +243,7 @@ def ctf1d(
     u = 1 + 2 * (pi * theta_c * d) ** 2 * q ** 2
     Et = numpy.exp(-((pi * l * d) ** 2) * q ** 4 / (2 * u))
     Es = numpy.exp(
-        -((pi * theta_c) ** 2) / (l ** 2 * u) * (Cs * l ** 3 * q ** 3 + df * l * q) ** 2
+        -((pi * theta_c) ** 2) / (l ** 2 * u) * (Cs * l ** 3 * q ** 3 - df * l * q) ** 2
     )
     A = 1 / numpy.sqrt(u)
 
