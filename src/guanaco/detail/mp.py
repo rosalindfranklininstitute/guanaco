@@ -39,6 +39,7 @@ def reconstruction_dispatcher(
     reconstruction,
     centre,
     angles,
+    weights=None,
     pixel_size=1,
     min_defocus=0,
     max_defocus=0,
@@ -56,6 +57,10 @@ def reconstruction_dispatcher(
     if device == "gpu" and ncore is None:
         ncore = 1
 
+    # Set weights to one
+    if weights is None:
+        weights = numpy.ones(sinogram.shape)
+
     # Compute the number of cores
     if device == "gpu" and gpu_list is not None:
         ngpu = len(gpu_list)
@@ -71,7 +76,7 @@ def reconstruction_dispatcher(
     if ncore == 1:
         for s in slices:
             reconstruction_worker(
-                sinogram[s],
+                sinogram[s] * weights,
                 reconstruction[s],
                 centre[s],
                 angles,
@@ -87,7 +92,7 @@ def reconstruction_dispatcher(
             for gpu, s in zip(gpu_list, slices):
                 e.submit(
                     reconstruction_worker,
-                    sinogram[s],
+                    sinogram[s] * weights,
                     reconstruction[s],
                     centre[s],
                     angles,

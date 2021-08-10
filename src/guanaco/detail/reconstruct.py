@@ -41,6 +41,77 @@ def get_centre(shape, centre, sinogram_order=True):
     return centre.astype(dtype="float32", copy=False)
 
 
+def compute_angular_weights(angles):
+    """
+    Compute angular weights for the projections
+
+    Params:
+        angles (float): The projection angles
+
+    Returns:
+        array: The weights
+
+    """
+
+    # Sort the angle indices
+    index = numpy.argsort(angles)
+
+    # Initialise the weights
+    weights = numpy.zeros(angles.size)
+
+    # Compute the mean interval for normalisation
+    if angles.size > 1:
+        mean_interval = (angles[index[-1]] - angles[index[0]]) / (angles.size - 1)
+    else:
+        mean_interval = 1.0
+
+    # Compute the angular weights
+    for i in range(angles.size):
+        sum_intervals = 0.0
+        sum_weights = 0.0
+        if i - 2 >= 0:
+            sum_weights += 1.0 / 1.5
+            sum_intervals += (1.0 / 1.5) * (angles[index[i - 1]] - angles[index[i - 2]])
+        if i - 1 >= 0:
+            sum_weights += 2.0
+            sum_intervals += 2.0 * (angles[index[i]] - angles[index[i - 1]])
+        if i + 1 < angles.size:
+            sum_weights += 2.0
+            sum_intervals += 2.0 * (angles[index[i + 1]] - angles[index[i]])
+        if i + 2 < angles.size:
+            sum_weights += 1.0 / 1.5
+            sum_intervals += (1.0 / 1.5) * (angles[index[i + 2]] - angles[index[i + 1]])
+        if sum_weights != 0:
+            weights[index[i]] = sum_intervals / sum_weights
+        else:
+            weights[index[i]] = 1.0
+
+    # Normalise the weights
+    weights /= mean_interval
+
+    # Return the weights
+    return weights
+
+
+def get_weights(angles, angular_weights=False):
+    """
+    Get the sinogram weights
+
+    Params:
+        angles (array): The array of angles
+        angular_weights (bool): Use angular weighting
+
+    Returns:
+        array: List of sinogram weights
+
+    """
+    if angular_weights:
+        weights = compute_angular_weights(angles)
+    else:
+        weights = numpy.ones(angles.shape)
+    return weights
+
+
 def reconstruct(
     tomogram,
     angles,
@@ -51,6 +122,7 @@ def reconstruct(
     max_defocus=0,
     sinogram_order=False,
     transform=None,
+    angular_weights=False,
     device="cpu",
     ncore=None,
     nchunk=None,
@@ -99,12 +171,16 @@ def reconstruct(
     # Generate args for the algorithm.
     centre = get_centre(sinogram.shape, centre)
 
+    # Get the weights
+    weights = get_weights(angles, angular_weights)
+
     # Perform the reconstruction in multiple threads
     guanaco.detail.mp.reconstruction_dispatcher(
         sinogram,
         reconstruction,
         centre,
         angles,
+        weights=weights,
         pixel_size=pixel_size,
         min_defocus=min_defocus,
         max_defocus=max_defocus,
@@ -138,6 +214,7 @@ def reconstruct_file(
     device="cpu",
     ncore=None,
     transform=None,
+    angular_weights=False,
     chunk_size=None,
     method="FBP_CTF",
     num_iter=None,
@@ -190,7 +267,12 @@ def reconstruct_file(
             assert voxel_size["x"] == voxel_size["y"]
             pixel_size = voxel_size["x"]
         else:
-            angles = start_angle + numpy.arange(projections.shape[0]) * step_angle
+            angles = (
+                (start_angle + numpy.arange(projections.shape[0]) * step_angle)
+                * pi
+                / 180.0
+            )
+            print(angles)
             voxel_size = pixel_size
 
         # Get the pixel size
@@ -245,6 +327,7 @@ def reconstruct_file(
                     max_defocus=max_defocus,
                     sinogram_order=False,
                     transform=transform,
+                    angular_weights=angular_weights,
                     device=device,
                     ncore=ncore,
                 )

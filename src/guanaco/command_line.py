@@ -212,6 +212,14 @@ def main(args=None):
     )
 
     parser.add_argument(
+        "--angular_weights",
+        dest="angular_weights",
+        default=False,
+        type=bool,
+        help="Set whether or not to use angular weights",
+    )
+
+    parser.add_argument(
         "-n,--ncore",
         dest="ncore",
         default=None,
@@ -311,6 +319,7 @@ def main(args=None):
         device=args.device,
         ncore=args.ncore,
         transform=args.transform,
+        angular_weights=args.angular_weights,
         chunk_size=args.chunk_size,
         method=args.method,
         num_iter=args.num_iter,
