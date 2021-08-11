@@ -57,10 +57,6 @@ def reconstruction_dispatcher(
     if device == "gpu" and ncore is None:
         ncore = 1
 
-    # Set weights to one
-    if weights is None:
-        weights = numpy.ones(sinogram.shape)
-
     # Compute the number of cores
     if device == "gpu" and gpu_list is not None:
         ngpu = len(gpu_list)
@@ -76,10 +72,11 @@ def reconstruction_dispatcher(
     if ncore == 1:
         for s in slices:
             reconstruction_worker(
-                sinogram[s] * weights,
+                sinogram[s],
                 reconstruction[s],
                 centre[s],
                 angles,
+                weights,
                 pixel_size,
                 min_defocus,
                 max_defocus,
@@ -92,10 +89,11 @@ def reconstruction_dispatcher(
             for gpu, s in zip(gpu_list, slices):
                 e.submit(
                     reconstruction_worker,
-                    sinogram[s] * weights,
+                    sinogram[s],
                     reconstruction[s],
                     centre[s],
                     angles,
+                    weights,
                     pixel_size,
                     min_defocus,
                     max_defocus,
@@ -110,6 +108,7 @@ def reconstruction_worker(
     reconstruction,
     centre,
     angles,
+    weights,
     pixel_size,
     min_defocus,
     max_defocus,
@@ -130,9 +129,21 @@ def reconstruction_worker(
         if transform == "minus":
             sino = -sino
 
+        # Get as contiguous array
+        sino = numpy.ascontiguousarray(sino)
+
+        # Set weights
+        if weights is not None:
+            if len(sino.shape) == 3:
+                for j in range(sino.shape[1]):
+                    sino[:, j, :] *= weights[j]
+            else:
+                for j in range(sino.shape[1]):
+                    sino[j, :] *= weights[j]
+
         print("Reconstructing slice %d/%d" % (i + 1, nslices))
         guanaco.detail.recon(
-            numpy.ascontiguousarray(sino),
+            sino,
             reconstruction[i],
             angles,
             centre[i],
