@@ -12,6 +12,11 @@ if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif()
 
+# Set the cuda arch
+if(NOT CMAKE_CUDA_ARCHITECTURES)
+  set(CMAKE_CUDA_ARCHITECTURES OFF)
+endif()
+
 # Set the cmake module path
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
@@ -57,7 +62,7 @@ add_library(guanaco STATIC
 
 # Not specifying CUDA architecture throws and error.
 # Setting this option does not pass arch flag to compiler
-set_property(TARGET guanaco PROPERTY CUDA_ARCHITECTURES OFF)
+set_property(TARGET guanaco PROPERTY CUDA_ARCHITECTURES ${CMAKE_CUDA_ARCHITECTURES})
 
 # Enable LTO
 set_property(TARGET guanaco PROPERTY INTERPROCEDURAL_OPTIMIZATION True)
