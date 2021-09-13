@@ -20,6 +20,7 @@
  */
 #include <thrust/complex.h>
 #include <thrust/device_vector.h>
+#include <thrust/host_vector.h>
 
 #include <guanaco/guanaco.h>
 
