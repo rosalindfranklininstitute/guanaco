@@ -466,7 +466,7 @@ def reconstruct_corrected(args=None):
         chunk_size=args.chunk_size,
         method=args.method,
         num_iter=args.num_iter,
-        min_max_defocus_output_filename=arg.min_max_defocus_output_filename,
+        min_max_defocus_output_filename=args.min_max_defocus_output_filename,
     )
 
 
@@ -729,5 +729,5 @@ def correct(args=None):
         device=args.device,
         ncore=args.ncore,
         transform=args.transform,
-        min_max_defocus_output_filename=arg.min_max_defocus_output_filename,
+        min_max_defocus_output_filename=args.min_max_defocus_output_filename,
     )
