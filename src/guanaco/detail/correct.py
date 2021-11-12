@@ -25,6 +25,7 @@ import tempfile
 import time
 import guanaco
 from math import pi
+import os
 
 
 __all__ = ["correct_file", "correct_projections"]
@@ -328,6 +329,7 @@ def correct_file(
     device="cpu",
     ncore=None,
     transform=None,
+    min_max_defocus_output_filename=None,
 ):
     """
     Perform the CTF correction
@@ -401,7 +403,7 @@ def correct_file(
             corrected = outfile.data
 
             # Reconstruct
-            correct_projections(
+            _, min_defocus, max_defocus = correct_projections(
                 projections,
                 centre,
                 pixel_size,
@@ -416,5 +418,9 @@ def correct_file(
                 corrected,
                 device,
             )
+
+            if min_max_defocus_output_filename is None:
+                min_max_defocus_output_filename = os.path.join(os.path.dirname(output_filename), "min_max_defocus.npz")
+            numpy.savez(min_max_defocus_output_filename, min_defocus=min_defocus, max_defocus=max_defocus)
 
     print("Time: %.2f seconds" % (time.time() - start_time))

@@ -26,8 +26,9 @@ import time
 from math import pi
 import guanaco.detail
 import guanaco.detail.mp
+import os
 
-__all__ = ["reconstruct_file", "reconstruct"]
+__all__ = ["reconstruct_file", "reconstruct_corrected_file", "reconstruct"]
 
 
 def get_centre(shape, centre, sinogram_order=True):
@@ -305,6 +306,139 @@ def reconstruct_file(
                 corrected_filename,
                 device,
             )
+
+        # Open the output file
+        print("Writing reconstruction to %s" % output_filename)
+        with open_reconstruction_file(
+            output_filename, output_shape, voxel_size
+        ) as outfile:
+
+            # Get the reconstruction data
+            reconstruction = outfile.data
+
+            # Reconstruct
+            if method in ["FBP_CTF"]:
+                reconstruct(
+                    projections,
+                    angles,
+                    reconstruction,
+                    centre=centre,
+                    pixel_size=pixel_size,
+                    min_defocus=min_defocus,
+                    max_defocus=max_defocus,
+                    sinogram_order=False,
+                    transform=transform,
+                    angular_weights=angular_weights,
+                    device=device,
+                    ncore=ncore,
+                )
+            else:
+                reconstruct_tomopy(
+                    projections,
+                    angles,
+                    reconstruction,
+                    centre=centre,
+                    transform=transform,
+                    device=device,
+                    ncore=ncore,
+                    method=method,
+                    num_iter=num_iter,
+                )
+
+    print("Time: %.2f seconds" % (time.time() - start_time))
+
+
+def reconstruct_corrected_file(
+    input_filename,
+    output_filename,
+    start_angle=None,
+    step_angle=None,
+    pixel_size=None,
+    centre=None,
+    device="cpu",
+    ncore=None,
+    transform=None,
+    angular_weights=False,
+    chunk_size=None,
+    method="FBP_CTF",
+    num_iter=None,
+    min_max_defocus_output_filename=None,
+):
+    """
+    Do the reconstruction
+
+    """
+    start_time = time.time()
+
+    def read_projection_metadata(infile):
+
+        # Read the voxel size
+        voxel_size = infile.voxel_size
+        print("Voxel size: ", infile.voxel_size)
+
+        # Read the angles
+        assert infile.data.shape[0] == infile.extended_header.shape[0]
+        angles = numpy.zeros(infile.extended_header.shape[0], dtype=numpy.float32)
+        for i in range(infile.extended_header.shape[0]):
+            angles[i] = infile.extended_header[i]["Alpha tilt"] * pi / 180.0
+            print("Image %d; angle %.4f" % (i + 1, angles[i]))
+
+        # Return metadata
+        return angles, voxel_size
+
+    def open_reconstruction_file(output_filename, shape, voxel_size):
+
+        # Open the file
+        outfile = mrcfile.new_mmap(
+            output_filename, overwrite=True, mrc_mode=2, shape=shape
+        )
+
+        # Set the voxel size
+        outfile.voxel_size = voxel_size
+
+        # Return the handle
+        return outfile
+
+    # Open the input file
+    print("Reading %s" % input_filename)
+    with mrcfile.mmap(input_filename) as infile:
+
+        # Get the corrected projection data
+        projections = infile.data
+
+        # Get the corrected projection metadata
+        if start_angle is None or step_angle is None or pixel_size is None:
+            angles, voxel_size = read_projection_metadata(infile)
+            assert voxel_size["x"] == voxel_size["y"]
+            pixel_size = voxel_size["x"]
+        else:
+            angles = (
+                (start_angle + numpy.arange(projections.shape[0]) * step_angle)
+                * pi
+                / 180.0
+            )
+            print(angles)
+            voxel_size = pixel_size
+
+        # Get the pixel size
+        print("Pixel size %d A" % pixel_size)
+
+        # Set the reconstruction shape
+        output_shape = (
+            projections.shape[1],
+            projections.shape[2],
+            projections.shape[2],
+        )
+
+        # Get the rotation centre
+        centre = get_centre(projections.shape, centre, False)
+
+        # Get the min and max relative defoci
+        if min_max_defocus_output_filename is None:
+            min_max_defocus_output_filename = os.path.join(os.path.dirname(input_filename), "min_max_defocus.npz")
+        min_max_defocus_storage = numpy.load(min_max_defocus_output_filename)
+        min_defocus = min_max_defocus_storage['min_defocus']
+        max_defocus = min_max_defocus_storage['max_defocus']
 
         # Open the output file
         print("Writing reconstruction to %s" % output_filename)
