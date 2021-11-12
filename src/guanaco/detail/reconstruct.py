@@ -435,10 +435,12 @@ def reconstruct_corrected_file(
 
         # Get the min and max relative defoci
         if min_max_defocus_output_filename is None:
-            min_max_defocus_output_filename = os.path.join(os.path.dirname(input_filename), "min_max_defocus.npz")
+            min_max_defocus_output_filename = os.path.join(
+                os.path.dirname(input_filename), "min_max_defocus.npz"
+            )
         min_max_defocus_storage = numpy.load(min_max_defocus_output_filename)
-        min_defocus = min_max_defocus_storage['min_defocus']
-        max_defocus = min_max_defocus_storage['max_defocus']
+        min_defocus = min_max_defocus_storage["min_defocus"]
+        max_defocus = min_max_defocus_storage["max_defocus"]
 
         # Open the output file
         print("Writing reconstruction to %s" % output_filename)

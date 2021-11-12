@@ -350,7 +350,6 @@ def reconstruct_corrected(args=None):
         help="The input file containing a stack of corrected projection images.",
     )
 
-
     parser.add_argument(
         "-d,--device",
         dest="device",
