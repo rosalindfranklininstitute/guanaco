@@ -66,6 +66,7 @@ def main():
         entry_points={
             "console_scripts": [
                 "guanaco=guanaco.command_line:main",
+                "guanaco.correct=guanaco.command_line:reconstruct_corrected",
                 "guanaco.plot_ctf=guanaco.command_line:plot_ctf",
                 "guanaco.generate_ctf=guanaco.command_line:generate_ctf",
                 "guanaco.correct=guanaco.command_line:correct",

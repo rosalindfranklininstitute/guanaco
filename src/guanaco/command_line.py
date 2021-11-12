@@ -326,6 +326,151 @@ def main(args=None):
     )
 
 
+def reconstruct_corrected(args=None):
+    """
+    Do the reconstruction (with input projections that are already CTF corrected)
+
+    """
+
+    # Create the command line parser
+    parser = argparse.ArgumentParser(description="Reconstruct")
+
+    parser.add_argument(
+        "-o",
+        dest="output",
+        default="rec.mrc",
+        help="The output file containing the reconstructed projections.",
+    )
+
+    parser.add_argument(
+        "-i",
+        dest="input",
+        default=None,
+        required=True,
+        help="The input file containing a stack of corrected projection images.",
+    )
+
+
+    parser.add_argument(
+        "-d,--device",
+        dest="device",
+        default="cpu",
+        choices=["cpu", "gpu"],
+        help="Use either the CPU or GPU",
+    )
+
+    parser.add_argument(
+        "--transform",
+        dest="transform",
+        default=None,
+        choices=["none", "minus"],
+        help="Set the transform to use on the corrected projections",
+    )
+
+    parser.add_argument(
+        "--angular_weights",
+        dest="angular_weights",
+        default=False,
+        type=bool,
+        help="Set whether or not to use angular weights",
+    )
+
+    parser.add_argument(
+        "-n,--ncore",
+        dest="ncore",
+        default=None,
+        type=int,
+        help="Set the number of cores to use",
+    )
+
+    parser.add_argument(
+        "--chunk_size",
+        dest="chunk_size",
+        default=None,
+        type=int,
+        help="Set the number of rows to reconstruct",
+    )
+
+    parser.add_argument(
+        "--start_angle",
+        dest="start_angle",
+        default=None,
+        type=float,
+        help="The starting angle in degrees.",
+    )
+
+    parser.add_argument(
+        "--step_angle",
+        dest="step_angle",
+        default=None,
+        type=float,
+        help="The step angle in degrees.",
+    )
+
+    parser.add_argument(
+        "--pixel_size",
+        dest="pixel_size",
+        default=None,
+        type=float,
+        help="The pixel size in A",
+    )
+
+    parser.add_argument(
+        "--centre",
+        dest="centre",
+        default=None,
+        type=float,
+        help="The rotation centre in pixels.",
+    )
+
+    parser.add_argument(
+        "--method",
+        dest="method",
+        default="FBP_CTF",
+        choices=["FBP_CTF", "FBP", "SIRT", "SART", "CGLS", "EM"],
+        help="""
+            Select the reconstruction algorithm. The FBP_CTF algorithm uses 3D
+            CTF correction with FBP, other algorithms require tomopy to be
+            installed""",
+    )
+
+    parser.add_argument(
+        "--num_iter",
+        dest="num_iter",
+        default=50,
+        type=int,
+        help="The number of iterations to use in SIRT/SART/CGLS/EM",
+    )
+
+    parser.add_argument(
+        "--min-max-defocus-store",
+        dest="min_max_defocus_output_filename",
+        default=None,
+        help="The file containing the mix-max relative defocus from the CTF",
+    )
+
+    # Parse the arguments
+    args = parser.parse_args(args=args)
+
+    # Do the reconstruction
+    guanaco.reconstruct_corrected_file(
+        input_filename=args.input,
+        output_filename=args.output,
+        start_angle=args.start_angle,
+        step_angle=args.step_angle,
+        pixel_size=args.pixel_size,
+        centre=args.centre,
+        device=args.device,
+        ncore=args.ncore,
+        transform=args.transform,
+        angular_weights=args.angular_weights,
+        chunk_size=args.chunk_size,
+        method=args.method,
+        num_iter=args.num_iter,
+        min_max_defocus_output_filename=arg.min_max_defocus_output_filename,
+    )
+
+
 def plot_ctf(args=None):
     """
     Plot the CTF
@@ -549,6 +694,13 @@ def correct(args=None):
         help="The rotation centre in pixels.",
     )
 
+    parser.add_argument(
+        "--min-max-defocus-store",
+        dest="min_max_defocus_output_filename",
+        default=None,
+        help="The file containing the mix-max relative defocus from the CTF",
+    )
+
     # Add some common arguments
     add_argument(parser, "energy")
     add_argument(parser, "defocus")
@@ -578,4 +730,5 @@ def correct(args=None):
         device=args.device,
         ncore=args.ncore,
         transform=args.transform,
+        min_max_defocus_output_filename=arg.min_max_defocus_output_filename,
     )

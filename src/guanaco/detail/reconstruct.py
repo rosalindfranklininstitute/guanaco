@@ -365,7 +365,7 @@ def reconstruct_corrected_file(
     min_max_defocus_output_filename=None,
 ):
     """
-    Do the reconstruction
+    Do the reconstruction (with input projections that are already CTF corrected)
 
     """
     start_time = time.time()
