@@ -157,7 +157,7 @@ def reconstruct(
     """
 
     def initialise_sinogram(tomogram, sinogram_order):
-        assert len(tomogram.shape) in [3, 4]
+        assert len(tomogram.shape) in [3, 4], "Dimensions must be 3 or 4"
         tomogram = tomogram.astype(dtype="float32", copy=False)
         if not sinogram_order:
             tomogram = numpy.swapaxes(tomogram, 0, -2)  # doesn't copy data
@@ -168,9 +168,15 @@ def reconstruct(
             shape = (sinogram.shape[0], sinogram.shape[-1], sinogram.shape[-1])
             reconstruction = numpy.zeros(shape, dtype="float32")
         else:
-            assert reconstruction.shape[0] == sinogram.shape[0]
-            assert reconstruction.shape[1] == sinogram.shape[-1]
-            assert reconstruction.shape[2] == sinogram.shape[-1]
+            assert (
+                reconstruction.shape[0] == sinogram.shape[0]
+            ), "Inconsistent reconstruction/sinogram shape"
+            assert (
+                reconstruction.shape[1] == sinogram.shape[-1]
+            ), "Inconsistent reconstruction/sinogram shape"
+            assert (
+                reconstruction.shape[2] == sinogram.shape[-1]
+            ), "Inconsistent reconstruction/sinogram shape"
         return reconstruction.astype(dtype="float32", copy=False)
 
     # Initialize sinogram
@@ -244,7 +250,9 @@ def reconstruct_file(
 
         # Read the angles
         if len(infile.data.shape) == 3:
-            assert infile.data.shape[0] == infile.extended_header.shape[0]
+            assert (
+                infile.data.shape[0] == infile.extended_header.shape[0]
+            ), "Inconsistent data/header shape"
             angles = numpy.zeros(infile.extended_header.shape[0], dtype=numpy.float32)
             for i in range(infile.extended_header.shape[0]):
                 angles[i] = numpy.deg2rad(infile.extended_header[i]["Alpha tilt"])
@@ -253,8 +261,12 @@ def reconstruct_file(
             max_defocus = 0
         else:
             infile.extended_header.shape = infile.data.shape[0:2]
-            assert infile.data.shape[0] == infile.extended_header.shape[0]
-            assert infile.data.shape[1] == infile.extended_header.shape[1]
+            assert (
+                infile.data.shape[0] == infile.extended_header.shape[0]
+            ), "Inconsistent data/header shape"
+            assert (
+                infile.data.shape[1] == infile.extended_header.shape[1]
+            ), "Inconsistent data/header shape"
             angles = numpy.zeros(infile.extended_header.shape[0], dtype=numpy.float32)
             for i in range(infile.extended_header.shape[0]):
                 angles[i] = numpy.deg2rad(infile.extended_header[i, 0]["Alpha tilt"])
@@ -294,7 +306,7 @@ def reconstruct_file(
             angles, voxel_size, min_defocus, max_defocus = read_projection_metadata(
                 infile
             )
-            assert voxel_size["x"] == voxel_size["y"]
+            assert voxel_size["x"] == voxel_size["y"], "Pixel must be a square"
             pixel_size = voxel_size["x"]
         else:
             angles = numpy.deg2rad(

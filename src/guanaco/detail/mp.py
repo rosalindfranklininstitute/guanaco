@@ -61,11 +61,11 @@ def reconstruction_dispatcher(
     if device == "gpu" and gpu_list is not None:
         ngpu = len(gpu_list)
         ncore, slices = get_ncore_slices(nslices, ngpu, nchunk)
-        assert ncore == len(slices)
-        assert ncore == ngpu
+        assert ncore == len(slices), "# cores must equal # slices"
+        assert ncore == ngpu, "# cores must equal # gpus"
     else:
         ncore, slices = get_ncore_slices(nslices, ncore, nchunk)
-        assert ncore == len(slices)
+        assert ncore == len(slices), "# cores must equal # slices"
         gpu_list = [None] * ncore
 
     # If only one core then run on this thread, otherwise spawn other threads

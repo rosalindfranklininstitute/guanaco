@@ -263,7 +263,9 @@ def correct_projections(
         )
 
         # Check consistency
-        assert abs(min_defocus + (num_defocus - 1) * step_defocus - max_defocus) < 1e-7
+        assert (
+            abs(min_defocus + (num_defocus - 1) * step_defocus - max_defocus) < 1e-7
+        ), "Inconsistent defocus steps"
 
         # The shape of the corrected projection array
         corrected_shape = (
@@ -361,7 +363,9 @@ def correct_file(
         print("Voxel size: ", infile.voxel_size)
 
         # Read the angles
-        assert infile.data.shape[0] == infile.extended_header.shape[0]
+        assert (
+            infile.data.shape[0] == infile.extended_header.shape[0]
+        ), "Inconsistent data/header array shape"
         angles = numpy.zeros(infile.extended_header.shape[0], dtype=numpy.float32)
         for i in range(infile.extended_header.shape[0]):
             angles[i] = numpy.deg2rad(infile.extended_header[i]["Alpha tilt"])
