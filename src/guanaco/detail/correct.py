@@ -129,6 +129,8 @@ def get_ctf(
     Get the CTF
 
     Params:
+        width (int): The image width
+        height (int): The image height
         shape (tuple): The image size
         pixel_size (float): The pixel size
         energy (float): The electron energy (keV)
@@ -170,7 +172,8 @@ def get_ctf_array(
     Get the CTF array
 
     Params:
-        shape (tuple): The image size
+        width (int): The image width
+        height (int): The image height
         pixel_size (float): The pixel size
         energy (float): The electron energy (keV)
         min_defocus (float): The minimum defocus (A)
@@ -259,6 +262,9 @@ def correct_projections(
             defocus, num_defocus, step_defocus, projections.shape[2], centre, pixel_size
         )
 
+        # Check consistency
+        assert abs(min_defocus + (num_defocus - 1) * step_defocus - max_defocus) < 1e-7
+
         # The shape of the corrected projection array
         corrected_shape = (
             projections.shape[0],
@@ -326,11 +332,23 @@ def correct_file(
     astigmatism_angle=None,
     phase_shift=None,
     device="cpu",
-    ncore=None,
-    transform=None,
 ):
     """
     Perform the CTF correction
+
+    Params:
+        input_filename (str): The input projections filename
+        output_filename (str): The output corrected projections filename
+        centre (float): The rotation centre
+        energy (float): The electron energy (keV)
+        defocus (float): The centre defocus (A)
+        num_defocus (int): The number of defoci
+        step_defocus (float): The defocus step (A)
+        spherical_aberration (float): The spherical aberration (mm)
+        astigmatism (float): The 2-fold astigmatism (A)
+        astigmatism_angle (float): The angle for 2-fold astigmatism (deg)
+        phase_shift (float): The phase shift (deg)
+        device (str): The cpu or gpu
 
     """
 
@@ -346,18 +364,39 @@ def correct_file(
         assert infile.data.shape[0] == infile.extended_header.shape[0]
         angles = numpy.zeros(infile.extended_header.shape[0], dtype=numpy.float32)
         for i in range(infile.extended_header.shape[0]):
-            angles[i] = infile.extended_header[i]["Alpha tilt"] * pi / 180.0
-            print("Image %d; angle %.4f" % (i + 1, angles[i]))
+            angles[i] = numpy.deg2rad(infile.extended_header[i]["Alpha tilt"])
+            print("Image %d; angle %.4f deg" % (i + 1, numpy.rad2deg(angles[i])))
 
         # Return metadata
         return angles, voxel_size
 
     def open_corrected_file(output_filename, shape, voxel_size):
 
+        # Set the data type
+        dtype = numpy.dtype(numpy.float32)
+
+        # Create the extended header
+        extended_header = numpy.zeros(
+            shape=shape[0:2], dtype=mrcfile.dtypes.FEI1_EXTENDED_HEADER_DTYPE
+        )
+
         # Open the file
         outfile = mrcfile.new_mmap(
-            output_filename, overwrite=True, mrc_mode=2, shape=shape
+            output_filename,
+            shape=(0, 0, 0, 0),
+            mrc_mode=mrcfile.utils.mode_from_dtype(dtype),
+            overwrite=True,
         )
+
+        # Some hacks to set the extended header without having to resize whole file.
+        outfile._check_writeable()
+        outfile._close_data()
+        outfile._extended_header = extended_header
+        outfile.header.nsymbt = extended_header.nbytes
+        outfile.header.exttyp = "FEI1"
+        outfile._open_memmap(dtype, shape)
+        outfile.update_header_from_data()
+        outfile.flush()
 
         # Set the voxel size
         outfile.voxel_size = voxel_size
@@ -385,23 +424,25 @@ def correct_file(
         # Set the number of defoci
         if num_defocus is None or num_defocus == 0:
             num_defocus = 1
+            step_defocus = 0
 
         # The shape of the corrected projection array
         output_shape = (
-            projections.shape[0] * num_defocus,
+            projections.shape[0],
+            num_defocus,
             projections.shape[1],
             projections.shape[2],
         )
 
         # Open the output file
-        print("Writing reconstruction to %s" % output_filename)
+        print("Writing corrected projections to %s" % output_filename)
         with open_corrected_file(output_filename, output_shape, voxel_size) as outfile:
 
             # Get the corrected data
             corrected = outfile.data
 
             # Reconstruct
-            correct_projections(
+            _, min_defocus, max_defocus = correct_projections(
                 projections,
                 centre,
                 pixel_size,
@@ -416,5 +457,19 @@ def correct_file(
                 corrected,
                 device,
             )
+
+            # Compute step defocus if necessary
+            if step_defocus is None:
+                step_defocus = (max_defocus - min_defocus) / (num_defocus - 1)
+
+            # Set the corrected data metadata
+            for j in range(output_shape[0]):
+                for i in range(output_shape[1]):
+                    outfile.extended_header[j, i]["Alpha tilt"] = numpy.rad2deg(
+                        angles[j]
+                    )
+                    outfile.extended_header[j, i]["Defocus"] = (
+                        min_defocus + i * step_defocus
+                    )
 
     print("Time: %.2f seconds" % (time.time() - start_time))

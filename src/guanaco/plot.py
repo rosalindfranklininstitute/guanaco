@@ -78,7 +78,7 @@ def plot_ctf(
     source_spread = source_spread / 1e3  # mrad -> rad
     spherical_aberration = spherical_aberration * 1e7  # mm -> A
     chromatic_aberration = chromatic_aberration * 1e7  # mm -> A
-    astigmatism_angle = astigmatism_angle * pi / 190  # deg -> rad
+    astigmatism_angle = astigmatism_angle * pi / 180  # deg -> rad
     energy = energy * 1e3  # keV -> eV
 
     # Compute the defocus spread
@@ -222,7 +222,7 @@ def generate_ctf(
     source_spread = source_spread / 1e3  # mrad -> rad
     spherical_aberration = spherical_aberration * 1e7  # mm -> A
     chromatic_aberration = chromatic_aberration * 1e7  # mm -> A
-    astigmatism_angle = astigmatism_angle * pi / 190  # deg -> rad
+    astigmatism_angle = astigmatism_angle * pi / 180  # deg -> rad
     energy = energy * 1e3  # keV -> eV
 
     # Compute the defocus spread

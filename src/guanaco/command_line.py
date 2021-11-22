@@ -330,6 +330,9 @@ def plot_ctf(args=None):
     """
     Plot the CTF
 
+    Params:
+        args (list): The input command line arguments
+
     """
 
     # Create the command line parser

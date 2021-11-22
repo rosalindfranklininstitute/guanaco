@@ -23,7 +23,6 @@
 import mrcfile
 import numpy
 import time
-from math import pi
 import guanaco.detail
 import guanaco.detail.mp
 
@@ -31,11 +30,23 @@ __all__ = ["reconstruct_file", "reconstruct"]
 
 
 def get_centre(shape, centre, sinogram_order=True):
+    """
+    Get the centre of the sinogram
+
+    Params:
+        shape (tuple): The sinogram shape
+        centre (object): The input centre
+        sinogram_order (bool): The order of the input data
+
+    Returns:
+        array: The centre array
+
+    """
     if not sinogram_order:
         shape = list(shape)
         shape[0], shape[-2] = shape[-2], shape[0]
     if centre is None:
-        centre = numpy.ones(shape[0], dtype="float32") * (shape[-1] / 2.0)
+        centre = numpy.ones(shape[0], dtype="float32") * (shape[-1] * 0.5)
     elif numpy.array(centre).size == 1:
         centre = numpy.ones(shape[0], dtype="float32") * centre
     return centre.astype(dtype="float32", copy=False)
@@ -232,14 +243,31 @@ def reconstruct_file(
         print("Voxel size: ", infile.voxel_size)
 
         # Read the angles
-        assert infile.data.shape[0] == infile.extended_header.shape[0]
-        angles = numpy.zeros(infile.extended_header.shape[0], dtype=numpy.float32)
-        for i in range(infile.extended_header.shape[0]):
-            angles[i] = infile.extended_header[i]["Alpha tilt"] * pi / 180.0
-            print("Image %d; angle %.4f" % (i + 1, angles[i]))
+        if len(infile.data.shape) == 3:
+            assert infile.data.shape[0] == infile.extended_header.shape[0]
+            angles = numpy.zeros(infile.extended_header.shape[0], dtype=numpy.float32)
+            for i in range(infile.extended_header.shape[0]):
+                angles[i] = numpy.deg2rad(infile.extended_header[i]["Alpha tilt"])
+                print("Image %d; angle %.4f deg" % (i + 1, numpy.rad2deg(angles[i])))
+            min_defocus = 0
+            max_defocus = 0
+        else:
+            infile.extended_header.shape = infile.data.shape[0:2]
+            assert infile.data.shape[0] == infile.extended_header.shape[0]
+            assert infile.data.shape[1] == infile.extended_header.shape[1]
+            angles = numpy.zeros(infile.extended_header.shape[0], dtype=numpy.float32)
+            for i in range(infile.extended_header.shape[0]):
+                angles[i] = numpy.deg2rad(infile.extended_header[i, 0]["Alpha tilt"])
+                print("Image %d; angle %.4f deg" % (i + 1, numpy.rad2deg(angles[i])))
+            defocus = numpy.zeros(infile.extended_header.shape[1], dtype=numpy.float32)
+            for i in range(infile.extended_header.shape[1]):
+                defocus[i] = infile.extended_header[0, i]["Defocus"]
+                print("Correction %d; defocus %.4f A" % (i + 1, defocus[i]))
+            min_defocus = numpy.min(defocus)
+            max_defocus = numpy.max(defocus)
 
         # Return metadata
-        return angles, voxel_size
+        return angles, voxel_size, min_defocus, max_defocus
 
     def open_reconstruction_file(output_filename, shape, voxel_size):
 
@@ -263,33 +291,41 @@ def reconstruct_file(
 
         # Get the projection metadata
         if start_angle is None or step_angle is None or pixel_size is None:
-            angles, voxel_size = read_projection_metadata(infile)
+            angles, voxel_size, min_defocus, max_defocus = read_projection_metadata(
+                infile
+            )
             assert voxel_size["x"] == voxel_size["y"]
             pixel_size = voxel_size["x"]
         else:
-            angles = (
-                (start_angle + numpy.arange(projections.shape[0]) * step_angle)
-                * pi
-                / 180.0
+            angles = numpy.deg2rad(
+                start_angle + numpy.arange(projections.shape[0]) * step_angle
             )
-            print(angles)
             voxel_size = pixel_size
+            min_defocus = 0
+            max_defocus = 0
 
         # Get the pixel size
         print("Pixel size %d A" % pixel_size)
 
         # Set the reconstruction shape
         output_shape = (
-            projections.shape[1],
-            projections.shape[2],
-            projections.shape[2],
+            projections.shape[-2],
+            projections.shape[-1],
+            projections.shape[-1],
         )
 
         # Get the rotation centre
         centre = get_centre(projections.shape, centre, False)
 
+        # Check if we have a corrected array
+        if len(projections.shape) == 4:
+            projections_are_corrected = True
+            method = "FBP_CTF"
+        else:
+            projections_are_corrected = False
+
         # Get the corrected projections.
-        if method in ["FBP_CTF"]:
+        if method in ["FBP_CTF"] and not projections_are_corrected:
             projections, min_defocus, max_defocus = guanaco.correct_projections(
                 projections,
                 centre,

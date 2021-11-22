@@ -6,7 +6,7 @@ import numpy
 import multiprocessing as mp
 import concurrent.futures as cf
 
-
+# FIXME DOCSTRING
 def get_ncore_slices(axis_size, ncore=None, nchunk=None):
     # default ncore to max (also defaults ncore == 0)
     if not ncore:
