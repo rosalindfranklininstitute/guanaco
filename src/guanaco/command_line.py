@@ -529,22 +529,6 @@ def correct(args=None):
     )
 
     parser.add_argument(
-        "--transform",
-        dest="transform",
-        default=None,
-        choices=["none", "minus"],
-        help="Set the transform to use on the corrected projections",
-    )
-
-    parser.add_argument(
-        "-n,--ncore",
-        dest="ncore",
-        default=None,
-        type=int,
-        help="Set the number of cores to use",
-    )
-
-    parser.add_argument(
         "--centre",
         dest="centre",
         default=None,
@@ -579,6 +563,4 @@ def correct(args=None):
         astigmatism_angle=args.astigmatism_angle,
         phase_shift=args.phase_shift,
         device=args.device,
-        ncore=args.ncore,
-        transform=args.transform,
     )
