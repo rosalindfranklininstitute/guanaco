@@ -464,7 +464,10 @@ def correct_file(
 
             # Compute step defocus if necessary
             if step_defocus is None:
-                step_defocus = (max_defocus - min_defocus) / (num_defocus - 1)
+                if num_defocus == 1:
+                    step_defocus = 0
+                else:
+                    step_defocus = (max_defocus - min_defocus) / (num_defocus - 1)
 
             # Set the corrected data metadata
             for j in range(output_shape[0]):
