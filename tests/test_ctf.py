@@ -21,7 +21,7 @@ def get_electron_wavelength_py(V):
     from scipy.constants import h
     from scipy.constants import m_e
 
-    return h * c / sqrt((e * V) ** 2 + 2 * m_e * e * V * c ** 2) * 1e10
+    return h * c / sqrt((e * V) ** 2 + 2 * m_e * e * V * c**2) * 1e10
 
 
 def get_defocus_spread_py(Cc, dEE, dII, dVV):
@@ -72,9 +72,9 @@ def spatial_incoherence_envelope(
     Cs = spherical_aberration  # Cs (A)
     theta_c = source_spread  # Source spread (rad)
     d = defocus_spread  # Defocus spread (A)
-    u = 1 + 2 * (pi * theta_c * d) ** 2 * q ** 2
+    u = 1 + 2 * (pi * theta_c * d) ** 2 * q**2
     return numpy.exp(
-        -((pi * theta_c) ** 2) / (l ** 2 * u) * (Cs * l ** 3 * q ** 3 + df * l * q) ** 2
+        -((pi * theta_c) ** 2) / (l**2 * u) * (Cs * l**3 * q**3 + df * l * q) ** 2
     )
 
 
@@ -96,8 +96,8 @@ def temporal_incoherence_envelope(q, wavelength=1, defocus_spread=0, source_spre
     l = wavelength  # Wavelength (A)
     theta_c = source_spread  # Source spread (rad)
     d = defocus_spread  # Defocus spread (A)
-    u = 1 + 2 * (pi * theta_c * d) ** 2 * q ** 2
-    return numpy.exp(-((pi * l * d) ** 2) * q ** 4 / (2 * u))
+    u = 1 + 2 * (pi * theta_c * d) ** 2 * q**2
+    return numpy.exp(-((pi * l * d) ** 2) * q**4 / (2 * u))
 
 
 def get_chi_py(q, defocus=0, spherical_aberration=0, wavelength=1):
@@ -118,7 +118,7 @@ def get_chi_py(q, defocus=0, spherical_aberration=0, wavelength=1):
     l = wavelength  # Wavelength (A)
     df = defocus  # Defocus (A)
     Cs = spherical_aberration  # Cs (A)
-    return pi * (Cs * l ** 3 * q ** 4 / 2 - l * df * q ** 2)
+    return pi * (Cs * l**3 * q**4 / 2 - l * df * q**2)
 
 
 def q_to_Q_py(q, spherical_aberration=0, wavelength=1):
@@ -138,7 +138,7 @@ def q_to_Q_py(q, spherical_aberration=0, wavelength=1):
     """
     l = wavelength  # Wavelength (A)
     Cs = spherical_aberration  # Cs (A)
-    return q * (Cs * l ** 3) ** (1.0 / 4.0)
+    return q * (Cs * l**3) ** (1.0 / 4.0)
 
 
 def Q_to_q_py(Q, spherical_aberration=0, wavelength=1):
@@ -158,7 +158,7 @@ def Q_to_q_py(Q, spherical_aberration=0, wavelength=1):
     """
     l = wavelength  # Wavelength (A)
     Cs = spherical_aberration  # Cs (A)
-    return Q / (Cs * l ** 3) ** (1.0 / 4.0)
+    return Q / (Cs * l**3) ** (1.0 / 4.0)
 
 
 def df_to_D_py(df, spherical_aberration=0, wavelength=1):
@@ -236,14 +236,14 @@ def ctf1d(
     d = defocus_spread  # Defocus spread (A)
 
     # Compute chi as Equation 10.9 in De Graef
-    chi = pi * (Cs * l ** 3 * q ** 4 / 2 - l * df * q ** 2)
+    chi = pi * (Cs * l**3 * q**4 / 2 - l * df * q**2)
 
     # Compute the spatial and temporal coherence envelopes as in equation 10.53
     # in De Graef
-    u = 1 + 2 * (pi * theta_c * d) ** 2 * q ** 2
-    Et = numpy.exp(-((pi * l * d) ** 2) * q ** 4 / (2 * u))
+    u = 1 + 2 * (pi * theta_c * d) ** 2 * q**2
+    Et = numpy.exp(-((pi * l * d) ** 2) * q**4 / (2 * u))
     Es = numpy.exp(
-        -((pi * theta_c) ** 2) / (l ** 2 * u) * (Cs * l ** 3 * q ** 3 - df * l * q) ** 2
+        -((pi * theta_c) ** 2) / (l**2 * u) * (Cs * l**3 * q**3 - df * l * q) ** 2
     )
     A = 1 / numpy.sqrt(u)
 
@@ -311,7 +311,7 @@ def ctf2d(
     Y, X = numpy.mgrid[0 : shape[0], 0 : shape[1]]
     Y = (1 / pixel_size) * (Y - shape[0] // 2) / shape[0]
     X = (1 / pixel_size) * (X - shape[1] // 2) / shape[1]
-    q = numpy.sqrt(X ** 2 + Y ** 2)
+    q = numpy.sqrt(X**2 + Y**2)
 
     # Evaluate the ctf
     ctf = ctf1d(
