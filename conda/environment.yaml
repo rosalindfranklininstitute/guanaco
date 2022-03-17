@@ -1,9 +1,10 @@
 name: guanaco
 channels:
   - james.parkhurst
+  - nvidia
 dependencies:
   - python=3.9
   - conda-build
   - conda-verify
   - anaconda-client
-  - cudatoolkit
+  - cuda-nvcc
