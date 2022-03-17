@@ -1,0 +1,68 @@
+{% set name = "guanaco" %}
+{% set version = "0.2.6" %}
+
+package:
+  name: "{{ name|lower }}"
+  version: "{{ version }}"
+
+source:
+  url: "https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz"
+  sha256: c7568cfd997204f9627f46f83fef6bf5071fa3c7f6faa968b4efb338e1beeb0d
+
+build:
+  number: 0
+  entry_points:
+    - guanaco=guanaco.command_line:main
+    - guanaco.plot_ctf=guanaco.command_line:plot_ctf
+    - guanaco.generate_ctf=guanaco.command_line:generate_ctf
+    - guanaco.correct=guanaco.command_line:correct
+  script: "{{ PYTHON }} -m pip install . -vv"
+
+requirements:
+  host:
+    - cmake
+    - fftw
+    - cudatoolkit
+    - mrcfile
+    - numpy
+    - pip
+    - python
+    - pyyaml
+    - matplotlib
+  run:
+    - cmake
+    - fftw
+    - cudatoolkit
+    - mrcfile
+    - numpy
+    - python
+    - pyyaml
+    - matplotlib
+
+test:
+  imports:
+    - guanaco
+    - guanaco.detail
+  commands:
+    - guanaco --help
+    - guanaco.plot_ctf --help
+    - guanaco.generate_ctf --help
+    - guanaco.correct --help
+  requires:
+    - mock
+    - pytest
+    - pytest-cov
+    - scipy
+
+about:
+  home: The package home page
+  license: BSD
+  license_family: BSD
+  license_file: 
+  summary: "3D CTF correction"
+  doc_url: 
+  dev_url: 
+
+extra:
+  recipe-maintainers:
+    - your-github-id-here
