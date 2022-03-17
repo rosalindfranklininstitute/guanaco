@@ -6,8 +6,7 @@ package:
   version: "{{ version }}"
 
 source:
-  url: "https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz"
-  sha256: c7568cfd997204f9627f46f83fef6bf5071fa3c7f6faa968b4efb338e1beeb0d
+  path: ..
 
 build:
   number: 0
@@ -55,14 +54,4 @@ test:
     - scipy
 
 about:
-  home: The package home page
-  license: BSD
-  license_family: BSD
-  license_file: 
   summary: "3D CTF correction"
-  doc_url: 
-  dev_url: 
-
-extra:
-  recipe-maintainers:
-    - your-github-id-here
