@@ -144,3 +144,6 @@ _skbuild/
 
 # ctags
 tags
+
+# setuptools_scm
+_version.py

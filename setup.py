@@ -58,11 +58,12 @@ def main():
         package_dir={"": "src"},
         packages=find_packages(where="src"),
         install_requires=["mrcfile", "numpy", "pyyaml"],
-        setup_requires=["pytest-runner"],
+        setup_requires=["setuptools_scm", "pytest-runner"],
         tests_require=tests_require,
         test_suite="tests",
         ext_modules=[Extension("guanaco_ext", [])],
         cmdclass={"build_ext": CMakeBuild},
+        use_scm_version={"write_to": "src/guanaco/_version.py"},
         entry_points={
             "console_scripts": [
                 "guanaco=guanaco.command_line:main",
