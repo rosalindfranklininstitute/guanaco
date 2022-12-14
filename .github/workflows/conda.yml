@@ -1,6 +1,10 @@
 name: Conda
 
-on: [push]
+on:
+  push:
+    branches: [ master ]
+  release:
+    types: [ created ]
 
 jobs:
   build-linux:
