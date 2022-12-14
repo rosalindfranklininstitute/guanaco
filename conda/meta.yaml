@@ -19,9 +19,10 @@ build:
 
 requirements:
   host:
+    - gcc=10.4.0
     - cmake
     - fftw
-    - cudatoolkit
+    - cudatoolkit=11.8
     - mrcfile
     - numpy
     - pip
@@ -31,7 +32,7 @@ requirements:
   run:
     - cmake
     - fftw
-    - cudatoolkit
+    - cudatoolkit=11.8
     - mrcfile
     - numpy
     - python
