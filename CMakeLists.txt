@@ -50,9 +50,6 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # Allow Lambdas to be called from device
 set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --extended-lambda")
 
-# Allow unsupported compilers
-set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --allow-unsupported-compiler")
-
 
 ##############################################################################
 # Build the guanaco library
