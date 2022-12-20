@@ -1,0 +1,56 @@
+{% set name = "guanaco" %}
+
+package:
+  name: "{{ name|lower }}"
+  version: {{ environ.get("GIT_DESCRIBE_TAG") }}
+
+source:
+  path: ..
+
+build:
+  number: 0
+  entry_points:
+    - guanaco=guanaco.command_line:main
+    - guanaco.plot_ctf=guanaco.command_line:plot_ctf
+    - guanaco.generate_ctf=guanaco.command_line:generate_ctf
+    - guanaco.correct=guanaco.command_line:correct
+  script: "{{ PYTHON }} -m pip install . -vv"
+
+requirements:
+  host:
+    - cmake
+    - fftw
+    - cudatoolkit
+    - mrcfile
+    - numpy
+    - pip
+    - python
+    - pyyaml
+    - matplotlib
+  run:
+    - cmake
+    - fftw
+    - cudatoolkit
+    - mrcfile
+    - numpy
+    - python
+    - pyyaml
+    - matplotlib
+
+test:
+  imports:
+    - guanaco
+    - guanaco.detail
+  commands:
+    - guanaco --help
+    - guanaco.plot_ctf --help
+    - guanaco.generate_ctf --help
+    - guanaco.correct --help
+  requires:
+    - mock
+    - pytest
+    - pytest-cov
+    - scipy
+
+about:
+  summary: "3D CTF correction"

@@ -376,13 +376,16 @@ def correct_file(
 
     def open_corrected_file(output_filename, shape, voxel_size):
 
+        try:
+            header_dtype = mrcfile.dtypes.FEI1_EXTENDED_HEADER_DTYPE
+        except Exception:
+            header_dtype = mrcfile.dtypes.get_ext_header_dtype(b"FEI1")
+
         # Set the data type
         dtype = numpy.dtype(numpy.float32)
 
         # Create the extended header
-        extended_header = numpy.zeros(
-            shape=shape[0:2], dtype=mrcfile.dtypes.FEI1_EXTENDED_HEADER_DTYPE
-        )
+        extended_header = numpy.zeros(shape=shape[0:2], dtype=header_dtype)
 
         # Open the file
         outfile = mrcfile.new_mmap(
@@ -464,7 +467,10 @@ def correct_file(
 
             # Compute step defocus if necessary
             if step_defocus is None:
-                step_defocus = (max_defocus - min_defocus) / (num_defocus - 1)
+                if num_defocus == 1:
+                    step_defocus = 0
+                else:
+                    step_defocus = (max_defocus - min_defocus) / (num_defocus - 1)
 
             # Set the corrected data metadata
             for j in range(output_shape[0]):

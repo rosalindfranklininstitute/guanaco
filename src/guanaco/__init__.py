@@ -18,5 +18,11 @@
 # You should have received a copy of the GNU General Public License
 # along with guanaco-ctf. If not, see <http:// www.gnu.org/licenses/>.
 #
+
+try:
+    from guanaco._version import version as __version__
+except ImportError:
+    __version__ = "unknown"
+
 from guanaco.detail.correct import *  # noqa
 from guanaco.detail.reconstruct import *  # noqa
