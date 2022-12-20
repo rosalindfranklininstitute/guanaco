@@ -138,7 +138,7 @@ def reconstruction_worker(
                 for j in range(sino.shape[1]):
                     sino[:, j, :] *= weights[j]
             else:
-                for j in range(sino.shape[1]):
+                for j in range(sino.shape[0]):
                     sino[j, :] *= weights[j]
 
         print("Reconstructing slice %d/%d" % (i + 1, nslices))
