@@ -46,9 +46,12 @@ namespace detail {
     // Allocate a complex buffer for the complex data
     auto buffer = complex_vector_type(num_ctf * xsize * ysize);
     auto buf = buffer.data();
-      
-    // Perform the forward FT
-    fft.forward(buffer.data());
+     
+    // Copy image to a buffer and perform the forward FT
+    auto image_ft = complex_vector_type(xsize * ysize);
+    auto img = image_ft.data();
+    std::copy(image, image + xsize * ysize, img);
+    fft.forward(img);
 
     // Loop through all the projections and do CTF correction
     std::vector<std::future<void>> result;
@@ -64,7 +67,7 @@ namespace detail {
             auto b = buf + j * ysize * xsize;
 
             // Copy the image into the complex zero padded array
-            std::copy(image, image + ysize * xsize, b);
+            std::copy(img, img + ysize * xsize, b);
 
             // Do the CTF correction
             for (auto k = 0; k < ysize * xsize; ++k) {

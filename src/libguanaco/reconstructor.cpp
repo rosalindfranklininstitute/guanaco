@@ -65,7 +65,7 @@ void Reconstructor_t<e_host>::project(const float *sinogram,
         // Add the defocus offset
         if (num_defocus > 1) {
           float height = -x * sin_angle - y * cos_angle;
-          float defocus = height * dscale * doffset;
+          float defocus = height * dscale + doffset;
           int defocus_index = (int)std::floor(defocus + 0.5);
           if (defocus_index < 0) defocus_index = 0;
           if (defocus_index > num_defocus - 1) defocus_index = num_defocus - 1;
