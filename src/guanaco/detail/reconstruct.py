@@ -243,7 +243,6 @@ def reconstruct_file(
     start_time = time.time()
 
     def read_projection_metadata(infile):
-
         # Read the voxel size
         voxel_size = infile.voxel_size
         print("Voxel size: ", infile.voxel_size)
@@ -282,7 +281,6 @@ def reconstruct_file(
         return angles, voxel_size, min_defocus, max_defocus
 
     def open_reconstruction_file(output_filename, shape, voxel_size):
-
         # Open the file
         outfile = mrcfile.new_mmap(
             output_filename, overwrite=True, mrc_mode=2, shape=shape
@@ -297,7 +295,6 @@ def reconstruct_file(
     # Open the input file
     print("Reading %s" % input_filename)
     with mrcfile.mmap(input_filename) as infile:
-
         # Get the projection data
         projections = infile.data
 
@@ -359,7 +356,6 @@ def reconstruct_file(
         with open_reconstruction_file(
             output_filename, output_shape, voxel_size
         ) as outfile:
-
             # Get the reconstruction data
             reconstruction = outfile.data
 

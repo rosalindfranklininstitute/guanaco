@@ -6,6 +6,7 @@ import numpy
 import multiprocessing as mp
 import concurrent.futures as cf
 
+
 # FIXME DOCSTRING
 def get_ncore_slices(axis_size, ncore=None, nchunk=None):
     # default ncore to max (also defaults ncore == 0)
@@ -49,7 +50,6 @@ def reconstruction_dispatcher(
     nchunk=None,
     gpu_list=None,
 ):
-
     # Unpack arguments
     nslices = sinogram.shape[0]
 
@@ -116,7 +116,6 @@ def reconstruction_worker(
     device,
     gpu_index,
 ):
-
     if gpu_index is None:
         gpu_index = 0
 

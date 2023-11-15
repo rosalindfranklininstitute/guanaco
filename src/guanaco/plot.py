@@ -146,7 +146,6 @@ def plot_ctf(
 
     # Plot the envelope
     if envelope is not None:
-
         # Compute the spatial incoherence envelope
         if envelope in ["spatial", "all"]:
             if Es_label is None:
@@ -258,7 +257,6 @@ def generate_ctf(
 
     # Loop through the defoci
     for i in range(num_defocus):
-
         # Set the defocus
         df = defocus + (i - 0.5 * (num_defocus - 1)) * step_defocus
         print("Computing CTF for defocus = %d A" % df)

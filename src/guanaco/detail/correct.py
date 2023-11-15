@@ -75,7 +75,6 @@ def get_defocus_steps(
         max_defocus = defocus
         step_defocus = 0
     elif num_defocus > 1:
-
         # If the step is set then compute min and max directly, otherwise
         # calculate based on the image shape and centre of rotation
         if step_defocus is not None and step_defocus > 0:
@@ -194,7 +193,6 @@ def get_ctf_array(
 
     # Loop through defoci
     for d in range(num_defocus):
-
         # Get the defocus
         df = min_defocus + d * step_defocus
 
@@ -256,7 +254,6 @@ def correct_projections(
 
     # If we have no defocus set then do nothing. Otherwise correct them
     if defocus is not None:
-
         # Compute the defocus steps
         min_defocus, max_defocus, step_defocus, num_defocus = get_defocus_steps(
             defocus, num_defocus, step_defocus, projections.shape[2], centre, pixel_size
@@ -357,7 +354,6 @@ def correct_file(
     start_time = time.time()
 
     def read_projection_metadata(infile):
-
         # Read the voxel size
         voxel_size = infile.voxel_size
         print("Voxel size: ", infile.voxel_size)
@@ -375,7 +371,6 @@ def correct_file(
         return angles, voxel_size
 
     def open_corrected_file(output_filename, shape, voxel_size):
-
         try:
             header_dtype = mrcfile.dtypes.FEI1_EXTENDED_HEADER_DTYPE
         except Exception:
@@ -414,7 +409,6 @@ def correct_file(
     # Open the input file
     print("Reading %s" % input_filename)
     with mrcfile.mmap(input_filename) as infile:
-
         # Get the projection metadata
         angles, voxel_size = read_projection_metadata(infile)
 
@@ -444,7 +438,6 @@ def correct_file(
         # Open the output file
         print("Writing corrected projections to %s" % output_filename)
         with open_corrected_file(output_filename, output_shape, voxel_size) as outfile:
-
             # Get the corrected data
             corrected = outfile.data
 
