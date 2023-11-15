@@ -159,7 +159,7 @@ def plot_ctf(
             if Et_label is None:
                 Et_label = "Et"
             Et = ctf_calculator.get_Et(q)
-            ax.plot(q, Et, label=Es_label)
+            ax.plot(q, Et, label=Et_label)
 
         # Plot the envelope
         ax.legend()
