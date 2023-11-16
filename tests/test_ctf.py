@@ -335,14 +335,12 @@ def ctf2d(
 
 
 def test_get_electron_wavelength():
-
     l1 = guanaco.detail.get_electron_wavelength(300000)
     l2 = get_electron_wavelength_py(300000)
     assert l1 == pytest.approx(l2)
 
 
 def test_get_defocus_spread():
-
     dd1 = guanaco.detail.get_defocus_spread(2.7 * 1e7, 1e-6, 1e-6, 1e-6)
     dd2 = get_defocus_spread_py(2.7 * 1e7, 1e-6, 1e-6, 1e-6)
     assert dd1 == pytest.approx(dd2)
@@ -409,7 +407,6 @@ def test_get_q_and_theta():
 
 
 def test_get_ctf():
-
     w = 100
     h = 100
     ps = 2

@@ -40,7 +40,6 @@ def test_data():
             return images, expected
 
         def centred_rotation_axis_centred_object_with_ctf(self):
-
             metadata_filename = self.path(
                 "centred_rotation_axis_centred_object_uncorrected_ctf.yaml"
             )
@@ -56,7 +55,6 @@ def test_data():
             return metadata, images.data, expected
 
         def off_centre_rotation_axis_centred_object_with_ctf(self):
-
             metadata_filename = self.path(
                 "off_centre_rotation_axis_centred_object_uncorrected_ctf.yaml"
             )
@@ -72,7 +70,6 @@ def test_data():
             return metadata, images.data, expected
 
         def centred_rotation_axis_off_centre_object_with_ctf(self):
-
             metadata_filename = self.path(
                 "centred_rotation_axis_off_centre_object_uncorrected_ctf.yaml"
             )
@@ -88,7 +85,6 @@ def test_data():
             return metadata, images.data, expected
 
         def off_centre_rotation_axis_off_centre_object_with_ctf(self):
-
             metadata_filename = self.path(
                 "off_centre_rotation_axis_off_centre_object_uncorrected_ctf.yaml"
             )
