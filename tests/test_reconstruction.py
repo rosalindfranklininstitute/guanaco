@@ -14,9 +14,11 @@ def test_data():
             return os.path.join(os.path.dirname(__file__), "data", filename)
 
         def angles(self, handle):
-            theta = numpy.zeros(handle.extended_header.shape[0], dtype=numpy.float32)
-            for i in range(handle.extended_header.shape[0]):
-                theta[i] = handle.extended_header[i]["Alpha tilt"] * pi / 180.0
+            theta = numpy.zeros(
+                handle.indexed_extended_header.shape[0], dtype=numpy.float32
+            )
+            for i in range(handle.indexed_extended_header.shape[0]):
+                theta[i] = handle.indexed_extended_header[i]["Alpha tilt"] * pi / 180.0
             return theta
 
         def centred_rotation_axis_centred_object(self):

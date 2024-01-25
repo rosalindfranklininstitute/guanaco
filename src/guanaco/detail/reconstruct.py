@@ -250,29 +250,39 @@ def reconstruct_file(
         # Read the angles
         if len(infile.data.shape) == 3:
             assert (
-                infile.data.shape[0] == infile.extended_header.shape[0]
+                infile.data.shape[0] == infile.indexed_extended_header.shape[0]
             ), "Inconsistent data/header shape"
-            angles = numpy.zeros(infile.extended_header.shape[0], dtype=numpy.float32)
-            for i in range(infile.extended_header.shape[0]):
-                angles[i] = numpy.deg2rad(infile.extended_header[i]["Alpha tilt"])
+            angles = numpy.zeros(
+                infile.indexed_extended_header.shape[0], dtype=numpy.float32
+            )
+            for i in range(infile.indexed_extended_header.shape[0]):
+                angles[i] = numpy.deg2rad(
+                    infile.indexed_extended_header[i]["Alpha tilt"]
+                )
                 print("Image %d; angle %.4f deg" % (i + 1, numpy.rad2deg(angles[i])))
             min_defocus = 0
             max_defocus = 0
         else:
-            infile.extended_header.shape = infile.data.shape[0:2]
+            infile.indexed_extended_header.shape = infile.data.shape[0:2]
             assert (
-                infile.data.shape[0] == infile.extended_header.shape[0]
+                infile.data.shape[0] == infile.indexed_extended_header.shape[0]
             ), "Inconsistent data/header shape"
             assert (
-                infile.data.shape[1] == infile.extended_header.shape[1]
+                infile.data.shape[1] == infile.indexed_extended_header.shape[1]
             ), "Inconsistent data/header shape"
-            angles = numpy.zeros(infile.extended_header.shape[0], dtype=numpy.float32)
-            for i in range(infile.extended_header.shape[0]):
-                angles[i] = numpy.deg2rad(infile.extended_header[i, 0]["Alpha tilt"])
+            angles = numpy.zeros(
+                infile.indexed_extended_header.shape[0], dtype=numpy.float32
+            )
+            for i in range(infile.indexed_extended_header.shape[0]):
+                angles[i] = numpy.deg2rad(
+                    infile.indexed_extended_header[i, 0]["Alpha tilt"]
+                )
                 print("Image %d; angle %.4f deg" % (i + 1, numpy.rad2deg(angles[i])))
-            defocus = numpy.zeros(infile.extended_header.shape[1], dtype=numpy.float32)
-            for i in range(infile.extended_header.shape[1]):
-                defocus[i] = infile.extended_header[0, i]["Defocus"]
+            defocus = numpy.zeros(
+                infile.indexed_extended_header.shape[1], dtype=numpy.float32
+            )
+            for i in range(infile.indexed_extended_header.shape[1]):
+                defocus[i] = infile.indexed_extended_header[0, i]["Defocus"]
                 print("Correction %d; defocus %.4f A" % (i + 1, defocus[i]))
             min_defocus = numpy.min(defocus)
             max_defocus = numpy.max(defocus)

@@ -360,11 +360,13 @@ def correct_file(
 
         # Read the angles
         assert (
-            infile.data.shape[0] == infile.extended_header.shape[0]
+            infile.data.shape[0] == infile.indexed_extended_header.shape[0]
         ), "Inconsistent data/header array shape"
-        angles = numpy.zeros(infile.extended_header.shape[0], dtype=numpy.float32)
-        for i in range(infile.extended_header.shape[0]):
-            angles[i] = numpy.deg2rad(infile.extended_header[i]["Alpha tilt"])
+        angles = numpy.zeros(
+            infile.indexed_extended_header.shape[0], dtype=numpy.float32
+        )
+        for i in range(infile.indexed_extended_header.shape[0]):
+            angles[i] = numpy.deg2rad(infile.indexed_extended_header[i]["Alpha tilt"])
             print("Image %d; angle %.4f deg" % (i + 1, numpy.rad2deg(angles[i])))
 
         # Return metadata
@@ -381,24 +383,17 @@ def correct_file(
 
         # Create the extended header
         extended_header = numpy.zeros(shape=shape[0:2], dtype=header_dtype)
+        extended_header["Metadata size"] = extended_header.dtype.itemsize
 
         # Open the file
         outfile = mrcfile.new_mmap(
             output_filename,
-            shape=(0, 0, 0, 0),
+            shape=shape,
             mrc_mode=mrcfile.utils.mode_from_dtype(dtype),
             overwrite=True,
+            extended_header=extended_header,
+            exttyp=b"FEI1",
         )
-
-        # Some hacks to set the extended header without having to resize whole file.
-        outfile._check_writeable()
-        outfile._close_data()
-        outfile._extended_header = extended_header
-        outfile.header.nsymbt = extended_header.nbytes
-        outfile.header.exttyp = "FEI1"
-        outfile._open_memmap(dtype, shape)
-        outfile.update_header_from_data()
-        outfile.flush()
 
         # Set the voxel size
         outfile.voxel_size = voxel_size
