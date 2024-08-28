@@ -33,10 +33,6 @@ namespace detail {
 
     const size_t MAX_ANGLES = 4096;
 
-    typedef texture<float, 3, cudaReadModeElementType> texture_type;
-
-    static texture_type sinogram;
-
     __constant__ float angle_sin[MAX_ANGLES];
     __constant__ float angle_cos[MAX_ANGLES];
     __constant__ float angle_offset[MAX_ANGLES];
@@ -50,6 +46,7 @@ namespace detail {
    * A functor that implements the back projection per voxel
    */
   struct BPFunction {
+    cudaTextureObject_t sinogram;
     size_t num_angles;
     size_t grid_width;
     size_t grid_height;
@@ -57,13 +54,15 @@ namespace detail {
     float dscale;
     float doffset;
 
-    BPFunction(size_t num_angles_,
+    BPFunction(cudaTextureObject_t sinogram_, 
+               size_t num_angles_,
                size_t grid_width_,
                size_t grid_height_,
                float output_scale_,
                float dscale_,
                float doffset_)
-        : num_angles(num_angles_),
+        : sinogram(sinogram_),
+          num_angles(num_angles_),
           grid_width(grid_width_),
           grid_height(grid_height_),
           output_scale(output_scale_),
@@ -96,7 +95,7 @@ namespace detail {
         const float defocus = height * dscale + doffset;
 
         // Sum the sinogram value for the pixel and angle
-        value += tex3D(g::sinogram, pixel, angle + 0.5, defocus) * scale;
+        value += tex3D<float>(sinogram, pixel, angle + 0.5, defocus) * scale;
       }
 
       // Add the contribution to the voxel
@@ -107,6 +106,7 @@ namespace detail {
   struct BP {
     using size_type = std::size_t;
 
+    cudaTextureObject_t sinogram_;
     cudaArray *sinogram_array_;
     size_type num_pixels_;
     size_type num_angles_;
@@ -124,7 +124,8 @@ namespace detail {
        float max_defocus,
        const float *sinogram,
        const float *angles)
-        : sinogram_array_(nullptr),
+        : sinogram_(0),
+          sinogram_array_(nullptr),
           num_pixels_(num_pixels),
           num_angles_(num_angles),
           num_defocus_(num_defocus),
@@ -146,6 +147,7 @@ namespace detail {
     }
 
     ~BP() {
+      cudaDestroyTextureObject(sinogram_);
       cudaFreeArray(sinogram_array_);
     }
 
@@ -213,21 +215,30 @@ namespace detail {
       copy_params.dstArray = sinogram_array_;
       copy_params.extent = extent;
       copy_params.kind = cudaMemcpyDeviceToDevice;
-      cudaMemcpy3D(&copy_params);
+      error = cudaMemcpy3D(&copy_params);
+      GUANACO_ASSERT_CUDA(error == cudaSuccess);
 
-      // Set texture parameters.
-      // For examples and pixels outside the expected range, this sets the
+      // create texture object
+      cudaResourceDesc resDesc;
+      memset(&resDesc, 0, sizeof(resDesc));
+      resDesc.resType = cudaResourceTypeArray;
+      resDesc.res.array.array = sinogram_array_;
+
+      // Set the texture parameters
+      // For pixels outside the expected range, this sets the
       // value to zero (border). For defocus outside of expected range, use the
       // closest (clamp).
-      g::sinogram.addressMode[0] = cudaAddressModeBorder;
-      g::sinogram.addressMode[1] = cudaAddressModeBorder;
-      g::sinogram.addressMode[2] = cudaAddressModeClamp;
-      g::sinogram.filterMode = cudaFilterModeLinear;
-      g::sinogram.normalized = false;
+      cudaTextureDesc texDesc;
+      memset(&texDesc, 0, sizeof(texDesc));
+      texDesc.readMode = cudaReadModeElementType;
+      texDesc.addressMode[0] = cudaAddressModeBorder;
+      texDesc.addressMode[1] = cudaAddressModeBorder;
+      texDesc.addressMode[2] = cudaAddressModeClamp;
+      texDesc.filterMode = cudaFilterModeLinear;
+      texDesc.normalizedCoords = false;
 
-      // Bind the texture to the array
-      error =
-        cudaBindTextureToArray(g::sinogram, sinogram_array_, channel_desc);
+      // create texture object: we only have to do this once!
+      error = cudaCreateTextureObject(&sinogram_, &resDesc, &texDesc, NULL);
       GUANACO_ASSERT_CUDA(error == cudaSuccess);
     }
 
@@ -248,10 +259,16 @@ namespace detail {
       auto grid_size = grid_width * grid_height;
       auto index = thrust::counting_iterator<size_t>(0);
       auto recon = thrust::device_pointer_cast(reconstruction);
-
+      
       // Initialise the functor
       BPFunction func(
-        num_angles_, grid_width, grid_height, scale, dscale, doffset);
+        sinogram_, 
+        num_angles_, 
+        grid_width, 
+        grid_height, 
+        scale, 
+        dscale, 
+        doffset);
 
       // Do the reconstruction
       thrust::transform(index, index + grid_size, recon, recon, func);
