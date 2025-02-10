@@ -72,7 +72,8 @@ def compute_angular_weights(angles):
 
     # Compute the mean interval for normalisation
     if angles.size > 1:
-        mean_interval = (angles[index[-1]] - angles[index[0]]) / (angles.size - 1)
+        mean_interval = abs(angles[index[-1]] - angles[index[0]]) / (angles.size - 1)
+        assert mean_interval != 0
     else:
         mean_interval = 1.0
 
