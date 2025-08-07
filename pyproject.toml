@@ -2,5 +2,8 @@
 requires = ["setuptools>=61", "setuptools_scm[toml]>=6.2", "cmake", "ninja", "wheel", "pytest-runner"]
 build-backend = "setuptools.build_meta"
 
+[project]
+license = "GPL-3.0-only"
+
 [tool.setuptools_scm]
 write_to = "src/guanaco/_version.py"
