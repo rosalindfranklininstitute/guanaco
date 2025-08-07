@@ -3,7 +3,52 @@ requires = ["setuptools>=61", "setuptools_scm[toml]>=6.2", "cmake", "ninja", "wh
 build-backend = "setuptools.build_meta"
 
 [project]
-license = "GPL-3.0-only"
+
+name = "guanaco"
+
+description = "3D CTF correction"
+long_description = "file: README.md"
+long_description_content_type = "text/markdown"
+
+license = {file = "LICENSE"}
+
+readme = "README.md"
+
+keywords = [
+  "Tomography"
+]
+
+authors = [
+  {name = "James Parkhurst", email = "james.parkhurst@rfi.ac.uk" }
+]
+
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.6",
+  "Programming Language :: Python :: 3.7",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+]
+
+#
+# Project urls
+#
+[project.urls]
+
+"Source" = "https://github.com/rosalindfranklininstitute/guanaco"
+"Tracker" = "https://github.com/rosalindfranklininstitute/guanaco/issues"
 
 [tool.setuptools_scm]
 write_to = "src/guanaco/_version.py"
+
+#
+# Configure pytest
+#
+[tool.pytest.ini_options]
+
+addopts = "--cov=src --cov-report term --cov-report html"
+
+testpaths = [ "tests" ]
