@@ -57,3 +57,9 @@ version = {attr = "guanaco._version.__version__"}
 [tool.setuptools_scm]
 write_to = "src/guanaco/_version.py"
 
+#
+# Configure pytest
+#
+[tool.pytest.ini_options]
+
+testpaths = [ "tests" ]
