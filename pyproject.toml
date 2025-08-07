@@ -9,7 +9,7 @@ name = "guanaco"
 description = "3D CTF correction"
 
 license =  "GPL-3.0-or-later"
-license-file = [ "LICENSE" ]
+license-files = [ "LICENSE" ]
 
 readme = "README.md"
 
