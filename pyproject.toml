@@ -32,7 +32,8 @@ classifiers = [
 ]
 
 dynamic = [
-  "version"
+  "version",
+  "scripts"
 ]
 
 #
