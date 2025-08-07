@@ -58,8 +58,6 @@ def main():
         package_dir={"": "src"},
         packages=find_packages(where="src"),
         install_requires=["mrcfile", "numpy", "pyyaml"],
-        tests_require=tests_require,
-        test_suite="tests",
         ext_modules=[Extension("guanaco_ext", [])],
         cmdclass={"build_ext": CMakeBuild},
         use_scm_version={"write_to": "src/guanaco/_version.py"},
@@ -73,7 +71,6 @@ def main():
         },
         extras_require={
             "build_sphinx": ["sphinx", "sphinx_rtd_theme"],
-            "test": tests_require,
         },
     )
 

@@ -8,7 +8,8 @@ name = "guanaco"
 
 description = "3D CTF correction"
 
-license = {file = "LICENSE"}
+license =  "GPL-3.0-or-later"
+license-file = [ "LICENSE" ]
 
 readme = "README.md"
 
@@ -33,7 +34,9 @@ classifiers = [
 
 dynamic = [
   "version",
-  "scripts"
+  "scripts",
+  "dependencies",
+  "optional-dependencies",
 ]
 
 #
