@@ -52,7 +52,6 @@ def main():
     Setup the package
 
     """
-    tests_require = ["pytest", "pytest-cov", "mock", "scipy"]
 
     setup(
         package_dir={"": "src"},
